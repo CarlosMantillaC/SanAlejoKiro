@@ -14,8 +14,8 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
   - Crear la estructura de carpetas: `app/`, `src/db/`, `src/utils/`, `src/components/`, `__tests__/unit/`, `__tests__/components/`, `__tests__/screens/`, `__tests__/smoke/`
   - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 2. Implementar capa de base de datos
-  - [ ] 2.1 Crear `src/db/schema.ts` con `initializeDatabase`
+- [x] 2. Implementar capa de base de datos
+  - [x] 2.1 Crear `src/db/schema.ts` con `initializeDatabase`
     - Implementar `initializeDatabase(db: SQLiteDatabase): Promise<void>` con `PRAGMA journal_mode = WAL`, `PRAGMA foreign_keys = ON` y `PRAGMA user_version`
     - Crear tabla `contenedor` (id, nombre, descripcion, ubicacion) con `CREATE TABLE IF NOT EXISTS`
     - Crear tabla `objeto` (id, nombre, descripcion, id_contenedor) con `FOREIGN KEY ... ON DELETE CASCADE`
@@ -28,7 +28,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Verificar que `PRAGMA foreign_keys` está activo (retorna 1)
     - _Requirements: 1.1, 1.2_
 
-  - [ ] 2.3 Crear `src/db/contenedorRepository.ts`
+  - [x] 2.3 Crear `src/db/contenedorRepository.ts`
     - Definir interfaz `Contenedor { id, nombre, descripcion, ubicacion }`
     - Implementar `getAllContenedores`: `SELECT * FROM contenedor ORDER BY nombre ASC`
     - Implementar `getContenedorById`: `SELECT * FROM contenedor WHERE id = ?`
@@ -55,7 +55,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - **Validates: Requirements 3.6**
     - Insertar un contenedor, luego actualizar con valores arbitrarios válidos, consultar por id y verificar que los valores retornados son los nuevos valores
 
-  - [ ] 2.7 Crear `src/db/objetoRepository.ts`
+  - [x] 2.7 Crear `src/db/objetoRepository.ts`
     - Definir interfaz `Objeto { id, nombre, descripcion, id_contenedor }`
     - Definir interfaz `ObjetoConContenedor extends Objeto { nombre_contenedor }`
     - Implementar `getObjetosByContenedor`: `SELECT * FROM objeto WHERE id_contenedor = ? ORDER BY nombre ASC`
