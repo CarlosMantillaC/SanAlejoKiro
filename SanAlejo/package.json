@@ -1,0 +1,31 @@
+{
+  "name": "sanalejo",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "expo": "~54.0.33",
+    "expo-constants": "~18.0.13",
+    "expo-router": "~6.0.23",
+    "expo-sqlite": "~16.0.10",
+    "expo-status-bar": "~3.0.9",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
+  },
+  "devDependencies": {
+    "@testing-library/react-native": "^13.3.3",
+    "@types/react": "~19.1.0",
+    "fast-check": "^4.8.0",
+    "jest": "^30.4.2",
+    "jest-expo": "^55.0.18",
+    "typescript": "~5.9.2"
+  },
+  "private": true
+}

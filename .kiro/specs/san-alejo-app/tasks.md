@@ -6,7 +6,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
 
 ## Tareas
 
-- [ ] 1. Inicializar proyecto y configurar dependencias
+- [x] 1. Inicializar proyecto y configurar dependencias
   - Crear el proyecto Expo con nombre "SanAlejo" usando `npx create-expo-app SanAlejo --template blank-typescript`
   - Instalar dependencias: `expo-sqlite`, `expo-router`, `expo-constants`, `expo-status-bar`
   - Instalar dependencias de testing: `jest`, `jest-expo`, `@testing-library/react-native`, `fast-check`
