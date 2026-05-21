@@ -7,7 +7,7 @@
 import fc from 'fast-check';
 import { openDatabaseAsync } from 'expo-sqlite';
 import { initializeDatabase } from '../../src/db/schema';
-import { insertContenedor } from '../../src/db/contenedorRepository';
+import { insertContenedor, deleteContenedor } from '../../src/db/contenedorRepository';
 import {
   getObjetosByContenedor,
   insertObjeto,
@@ -230,6 +230,64 @@ describe('Property 9: Round-trip de actualización de objeto', () => {
               retrieved.descripcion === updatedData.descripcion &&
               retrieved.id_contenedor === idContenedor
             );
+          }
+        ),
+        { numRuns: 100 }
+      );
+    }
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Property 10: Eliminación en cascada de objetos al eliminar contenedor
+// ---------------------------------------------------------------------------
+
+// Feature: san-alejo-app, Property 10: Eliminación en cascada de objetos al eliminar contenedor
+describe('Property 10: Eliminación en cascada de objetos al eliminar contenedor', () => {
+  it(
+    'eliminar un contenedor deja getObjetosByContenedor vacío para ese id_contenedor',
+    async () => {
+      /**
+       * Validates: Requirements 7.3
+       *
+       * Para cualquier contenedor con N objetos (N ≥ 0), eliminar el contenedor
+       * debe resultar en que getObjetosByContenedor retorne una lista vacía para
+       * ese id_contenedor, gracias a la restricción ON DELETE CASCADE del esquema.
+       */
+      await fc.assert(
+        fc.asyncProperty(
+          // N objetos para el contenedor (0..20)
+          fc.array(objetoDataArb, { minLength: 0, maxLength: 20 }),
+          async (objetos) => {
+            // Fresh in-memory DB per property run
+            const db = await openDatabaseAsync(':memory:');
+            await initializeDatabase(db as any);
+
+            // Create a contenedor
+            const idContenedor = await insertContenedor(db as any, {
+              nombre: 'Contenedor Cascada',
+              descripcion: 'Contenedor para prueba de cascada',
+              ubicacion: 'Ubicacion Cascada',
+            });
+
+            // Insert N objetos into the contenedor
+            for (const obj of objetos) {
+              await insertObjeto(db as any, {
+                ...obj,
+                id_contenedor: idContenedor,
+              });
+            }
+
+            // Delete the contenedor — should cascade-delete all its objetos
+            await deleteContenedor(db as any, idContenedor);
+
+            // Query objetos for the deleted contenedor
+            const result = await getObjetosByContenedor(db as any, idContenedor);
+
+            await db.closeAsync();
+
+            // Must return empty array regardless of how many objetos were inserted
+            return result.length === 0;
           }
         ),
         { numRuns: 100 }

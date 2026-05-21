@@ -83,7 +83,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - **Validates: Requirements 5.6**
     - Insertar un objeto, actualizar con valores arbitrarios válidos, consultar y verificar que los valores retornados son los nuevos valores
 
-  - [ ]* 2.11 Escribir property test — Property 10: Eliminación en cascada
+  - [x] 2.11 Escribir property test — Property 10: Eliminación en cascada
     - Escribir en `__tests__/unit/objetoRepository.test.ts`
     - **Property 10: Eliminación en cascada de objetos al eliminar contenedor**
     - **Validates: Requirements 7.3**
