@@ -11,6 +11,7 @@ import { insertContenedor } from '../../src/db/contenedorRepository';
 import {
   getObjetosByContenedor,
   insertObjeto,
+  updateObjeto,
   Objeto,
 } from '../../src/db/objetoRepository';
 
@@ -161,6 +162,72 @@ describe('Property 8: Round-trip de inserción de objeto', () => {
             return (
               retrieved.nombre === objetoData.nombre &&
               retrieved.descripcion === objetoData.descripcion &&
+              retrieved.id_contenedor === idContenedor
+            );
+          }
+        ),
+        { numRuns: 100 }
+      );
+    }
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Property 9: Round-trip de actualización de objeto
+// ---------------------------------------------------------------------------
+
+// Feature: san-alejo-app, Property 9: Round-trip de actualización de objeto
+describe('Property 9: Round-trip de actualización de objeto', () => {
+  it(
+    'actualizar un objeto y consultarlo retorna exactamente los nuevos valores',
+    async () => {
+      /**
+       * Validates: Requirements 5.6
+       *
+       * Para cualquier objeto existente y cualquier conjunto de nuevos valores
+       * válidos, actualizar el objeto y luego consultarlo debe retornar
+       * exactamente los nuevos valores.
+       */
+      await fc.assert(
+        fc.asyncProperty(
+          contenedorArb,
+          objetoDataArb,
+          objetoDataArb,
+          async (contenedorData, originalData, updatedData) => {
+            // Fresh in-memory DB per property run
+            const db = await openDatabaseAsync(':memory:');
+            await initializeDatabase(db as any);
+
+            // Create a contenedor to satisfy the foreign key constraint
+            const idContenedor = await insertContenedor(db as any, contenedorData);
+
+            // Insert the original objeto
+            const insertedId = await insertObjeto(db as any, {
+              ...originalData,
+              id_contenedor: idContenedor,
+            });
+
+            // Update with new values
+            await updateObjeto(db as any, insertedId, {
+              nombre: updatedData.nombre,
+              descripcion: updatedData.descripcion,
+            });
+
+            // Retrieve and find the updated objeto
+            const allObjetos = await getObjetosByContenedor(db as any, idContenedor);
+            const retrieved: Objeto | undefined = allObjetos.find(
+              (o) => o.id === insertedId
+            );
+
+            await db.closeAsync();
+
+            // Must still exist
+            if (!retrieved) return false;
+
+            // Fields must reflect the updated values, not the originals
+            return (
+              retrieved.nombre === updatedData.nombre &&
+              retrieved.descripcion === updatedData.descripcion &&
               retrieved.id_contenedor === idContenedor
             );
           }

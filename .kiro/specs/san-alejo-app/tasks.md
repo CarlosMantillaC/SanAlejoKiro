@@ -77,7 +77,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - **Validates: Requirements 5.5**
     - Insertar un objeto con valores arbitrarios válidos y un `id_contenedor` existente, consultar por id y verificar que todos los campos retornados son idénticos a los insertados
 
-  - [ ]* 2.10 Escribir property test — Property 9: Round-trip de actualización de objeto
+  - [x] 2.10 Escribir property test — Property 9: Round-trip de actualización de objeto
     - Escribir en `__tests__/unit/objetoRepository.test.ts`
     - **Property 9: Round-trip de actualización de objeto**
     - **Validates: Requirements 5.6**
