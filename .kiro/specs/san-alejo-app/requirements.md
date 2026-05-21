@@ -16,6 +16,9 @@ San Alejo es una aplicación móvil desarrollada en Expo (React Native) con alma
 - **Formulario_Objeto**: Pantalla con campos editables para crear o modificar un Objeto.
 - **Navegador**: Componente de navegación entre pantallas (Expo Router o React Navigation).
 - **Validador**: Módulo encargado de verificar que los campos obligatorios no estén vacíos antes de persistir datos.
+- **Foto_Objeto**: Imagen opcional asociada a un Objeto, almacenada como archivo en el sistema de archivos del dispositivo. Su ruta local se persiste en la columna `foto_uri` de la tabla `objeto`.
+- **FileSystem**: Módulo `expo-file-system` utilizado para leer, escribir y eliminar archivos de imagen en el directorio persistente de la App (`FileSystem.documentDirectory + 'images/'`).
+- **ImagePicker**: Módulo `expo-image-picker` utilizado para que el usuario capture una foto con la cámara del dispositivo o seleccione una imagen de la galería.
 
 ---
 
@@ -97,6 +100,7 @@ San Alejo es una aplicación móvil desarrollada en Expo (React Native) con alma
 6. WHEN todos los campos son válidos y el usuario toca "Guardar" en modo edición, THE Base_de_Datos SHALL actualizar el registro existente en la tabla `objeto` con los nuevos valores.
 7. WHEN la Base_de_Datos confirma la inserción o actualización exitosa, THE Navegador SHALL regresar al Detalle_Contenedor y THE Detalle_Contenedor SHALL mostrar el Objeto creado o actualizado.
 8. IF la Base_de_Datos falla al insertar o actualizar, THEN THE Formulario_Objeto SHALL mostrar un mensaje de error indicando que no se pudo guardar el Objeto.
+9. THE Formulario_Objeto SHALL presentar un control opcional para asociar una Foto_Objeto al Objeto, de modo que el campo `foto_uri` pueda quedar en null si el usuario no selecciona ninguna imagen.
 
 ---
 
@@ -156,3 +160,24 @@ San Alejo es una aplicación móvil desarrollada en Expo (React Native) con alma
 3. THE Detalle_Contenedor SHALL ofrecer una acción de edición por cada Objeto listado.
 4. WHEN el usuario activa la acción de edición sobre un Objeto, THE Navegador SHALL navegar al Formulario_Objeto en modo edición con los datos actuales del Objeto precargados.
 5. WHEN el Formulario_Contenedor o el Formulario_Objeto se abre en modo edición, THE Formulario_Contenedor SHALL mostrar los valores actuales en los campos correspondientes para que el usuario pueda modificarlos.
+
+---
+
+### Requirement 10: Fotos de objetos
+
+**User Story:** Como usuario, quiero tomar o seleccionar una foto para cada objeto, para que pueda identificarlo visualmente sin necesidad de abrir el contenedor.
+
+#### Acceptance Criteria
+
+1. WHEN la App se inicia, THE Base_de_Datos SHALL agregar la columna `foto_uri` (TEXT, nullable) a la tabla `objeto` si no existe, de modo que los registros existentes conserven `foto_uri = null`.
+2. THE Formulario_Objeto SHALL presentar un control que permita al usuario seleccionar una Foto_Objeto mediante la cámara del dispositivo o la galería de imágenes, siendo este campo opcional.
+3. WHEN el usuario activa el control de foto en el Formulario_Objeto, THE ImagePicker SHALL mostrar opciones para "Tomar foto" (cámara) y "Seleccionar de galería".
+4. WHEN el usuario captura o selecciona una imagen mediante el ImagePicker, THE FileSystem SHALL copiar el archivo de imagen al directorio `FileSystem.documentDirectory + 'images/'` y THE Formulario_Objeto SHALL mostrar una vista previa de la Foto_Objeto seleccionada.
+5. WHEN todos los campos son válidos y el usuario toca "Guardar" en el Formulario_Objeto con una Foto_Objeto seleccionada, THE Base_de_Datos SHALL persistir la ruta local del archivo de imagen en la columna `foto_uri` del registro `objeto` correspondiente.
+6. WHEN todos los campos son válidos y el usuario toca "Guardar" en el Formulario_Objeto sin haber seleccionado ninguna Foto_Objeto, THE Base_de_Datos SHALL persistir `null` en la columna `foto_uri` del registro `objeto` correspondiente.
+7. WHEN un Objeto con `foto_uri` no nulo es mostrado en el Detalle_Contenedor, THE Detalle_Contenedor SHALL mostrar la Foto_Objeto junto al nombre y la descripción de ese Objeto.
+8. WHEN el Formulario_Objeto se abre en modo edición para un Objeto con `foto_uri` no nulo, THE Formulario_Objeto SHALL mostrar la Foto_Objeto actual como vista previa y permitir al usuario reemplazarla o eliminarla.
+9. WHEN el usuario confirma la eliminación de un Objeto cuyo `foto_uri` no es null, THE FileSystem SHALL eliminar el archivo de imagen ubicado en la ruta `foto_uri` del sistema de archivos del dispositivo antes de que THE Base_de_Datos elimine el registro de la tabla `objeto`.
+10. WHEN el usuario confirma la eliminación de un Contenedor, THE FileSystem SHALL eliminar todos los archivos de imagen referenciados por los `foto_uri` no nulos de los Objetos pertenecientes a ese Contenedor antes de que THE Base_de_Datos elimine el registro de la tabla `contenedor`.
+11. IF el ImagePicker no obtiene permiso para acceder a la cámara o a la galería, THEN THE App SHALL mostrar un mensaje informando al usuario que debe conceder el permiso correspondiente en la configuración del dispositivo.
+12. IF el FileSystem falla al copiar, leer o eliminar un archivo de imagen, THEN THE App SHALL mostrar un mensaje de error indicando que no se pudo procesar la foto, sin interrumpir la operación principal sobre el Objeto o el Contenedor.
