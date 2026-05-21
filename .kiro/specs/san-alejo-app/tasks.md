@@ -149,7 +149,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
 - [x] 4. Checkpoint — Verificar capa de datos y validación
   - Asegurarse de que todos los tests de la capa de datos y validación pasan. Consultar al usuario si surgen dudas.
 
-- [~] 4.5. Checkpoint — Verificar imageStorage y property tests 14, 15, 16
+- [x] 4.5. Checkpoint — Verificar imageStorage y property tests 14, 15, 16
   - Asegurarse de que los tests de `imageStorage` pasan y que los property tests 14, 15 y 16 pasan correctamente. Consultar al usuario si surgen dudas.
 
 - [ ] 5. Implementar componentes reutilizables de UI
@@ -170,13 +170,13 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Incluir botón o acción de eliminación que dispara `onDelete`
     - _Requirements: 2.2, 7.1_
 
-  - [ ] 5.4 Crear `src/components/ObjetoItem.tsx`
+  - [x] 5.4 Crear `src/components/ObjetoItem.tsx`
     - Componente `ObjetoItem` con props: `objeto: Objeto`, `onEdit`, `onDelete`
     - Mostrar nombre y descripción del objeto
     - Incluir acciones de edición y eliminación
     - _Requirements: 4.3, 6.1, 9.3_
 
-  - [~] 5.5 Crear `src/components/ImagePickerButton.tsx`
+  - [x] 5.5 Crear `src/components/ImagePickerButton.tsx`
     - Props: `currentUri: string | null`, `onImageSelected: (uri: string) => void`, `onPermissionDenied: () => void`
     - Solicitar permisos de galería con `ImagePicker.requestMediaLibraryPermissionsAsync()` y de cámara con `requestCameraPermissionsAsync()` según la acción elegida
     - Si el permiso no es concedido, llamar `onPermissionDenied` sin abrir el picker
@@ -192,15 +192,15 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Caso: presionar "Eliminar" → llama `onConfirm`
     - _Requirements: 6.2, 6.5, 7.2, 7.5_
 
-- [ ] 6. Implementar Root Layout y pantalla principal (Lista de Contenedores)
-  - [~] 6.1 Crear `app/_layout.tsx`
+- [x] 6. Implementar Root Layout y pantalla principal (Lista de Contenedores)
+  - [x] 6.1 Crear `app/_layout.tsx`
     - Envolver la app con `SQLiteProvider` usando `databaseName="san-alejo.db"`, `onInit={initializeDatabase}` y `useSuspense`
     - Agregar `Suspense` con fallback de `ActivityIndicator`
     - Manejar errores de inicialización con `onError` mostrando mensaje "No se pudo abrir el almacenamiento local."
     - Renderizar `<Stack />` de Expo Router dentro del provider
     - _Requirements: 1.3, 1.4_
 
-  - [~] 6.2 Crear `app/index.tsx` — Lista de Contenedores
+  - [x] 6.2 Crear `app/index.tsx` — Lista de Contenedores
     - Obtener instancia de BD con `useSQLiteContext`
     - Cargar contenedores con `getAllContenedores` en `useEffect` y almacenar en estado local
     - Renderizar `FlatList` con `ContenedorItem` para cada contenedor
@@ -224,8 +224,8 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Caso: tocar FAB → navega a `/contenedor/nuevo`
     - _Requirements: 2.3, 2.5, 2.6_
 
-- [ ] 7. Implementar Formulario de Contenedor (crear y editar)
-  - [~] 7.1 Crear `app/contenedor/nuevo.tsx` — Formulario contenedor (modo creación)
+- [x] 7. Implementar Formulario de Contenedor (crear y editar)
+  - [x] 7.1 Crear `app/contenedor/nuevo.tsx` — Formulario contenedor (modo creación)
     - Renderizar campos `TextInput` para nombre, descripción y ubicación
     - Botón "Guardar" que llama a `validateFields` antes de persistir
     - Si validación falla, mostrar mensajes de error por campo sin cerrar el formulario
@@ -233,7 +233,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Manejar errores de BD mostrando "No se pudo guardar el contenedor."
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.7, 3.8_
 
-  - [~] 7.2 Crear `app/contenedor/editar/[id].tsx` — Formulario contenedor (modo edición)
+  - [x] 7.2 Crear `app/contenedor/editar/[id].tsx` — Formulario contenedor (modo edición)
     - Leer `id` de los parámetros de ruta con `useLocalSearchParams`
     - Cargar datos actuales del contenedor con `getContenedorById` y precargar los campos
     - Botón "Guardar" que llama a `validateFields` y luego `updateContenedor`
@@ -250,7 +250,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - _Requirements: 3.3, 3.4, 3.5, 3.6, 3.8, 9.5_
 
 - [ ] 8. Implementar pantalla Detalle del Contenedor
-  - [~] 8.1 Crear `app/contenedor/[id].tsx` — Detalle del Contenedor
+  - [x] 8.1 Crear `app/contenedor/[id].tsx` — Detalle del Contenedor
     - Leer `id` de los parámetros de ruta con `useLocalSearchParams`
     - Cargar datos del contenedor con `getContenedorById` y objetos con `getObjetosByContenedor`
     - Mostrar nombre, descripción y ubicación del contenedor en la cabecera
@@ -261,7 +261,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Recargar datos al volver a la pantalla usando `useFocusEffect`
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 9.1, 9.2_
 
-  - [~] 8.2 Agregar eliminación de objetos en `app/contenedor/[id].tsx`
+  - [x] 8.2 Agregar eliminación de objetos en `app/contenedor/[id].tsx`
     - Al tocar la acción de eliminar en `ObjetoItem`, mostrar `ConfirmDialog` con "¿Eliminar este objeto?"
     - Al confirmar, obtener el objeto con `getObjetoById` para recuperar su `foto_uri`; si `foto_uri` no es null, llamar `deleteImageFromStorage` antes de proceder
     - Llamar `deleteObjeto` y recargar la lista de objetos
@@ -285,8 +285,8 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - **Validates: Requirements 4.1, 4.3**
     - Para cualquier contenedor con datos arbitrarios y N objetos asociados, verificar que la pantalla renderiza nombre, descripción y ubicación del contenedor, y nombre y descripción de cada objeto
 
-- [ ] 9. Implementar Formulario de Objeto (crear y editar)
-  - [~] 9.1 Crear `app/contenedor/objeto/nuevo.tsx` — Formulario objeto (modo creación)
+- [x] 9. Implementar Formulario de Objeto (crear y editar)
+  - [x] 9.1 Crear `app/contenedor/objeto/nuevo.tsx` — Formulario objeto (modo creación)
     - Leer `id_contenedor` de los query params con `useLocalSearchParams`
     - Renderizar campos `TextInput` para nombre y descripción
     - Integrar `ImagePickerButton` con estado local `fotoUri: string | null` (inicialmente `null`)
@@ -298,7 +298,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Manejar errores de BD mostrando "No se pudo guardar el objeto."
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.7, 5.8, 10.2, 10.3, 10.4, 10.5, 10.6, 10.11_
 
-  - [~] 9.2 Crear `app/contenedor/objeto/editar/[id].tsx` — Formulario objeto (modo edición)
+  - [x] 9.2 Crear `app/contenedor/objeto/editar/[id].tsx` — Formulario objeto (modo edición)
     - Leer `id` de los parámetros de ruta con `useLocalSearchParams`
     - Cargar datos actuales del objeto con `getObjetoById` y precargar los campos nombre, descripción y `fotoUri`
     - Integrar `ImagePickerButton` mostrando la foto actual como vista previa si `foto_uri` no es null
@@ -323,11 +323,11 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - **Validates: Requirements 9.5**
     - Para cualquier contenedor u objeto con datos arbitrarios, verificar que abrir el formulario en modo edición inicializa los campos con exactamente los valores actuales del registro
 
-- [~] 10. Checkpoint — Verificar pantallas principales y formularios
+- [x] 10. Checkpoint — Verificar pantallas principales y formularios
   - Asegurarse de que todos los tests de pantallas y formularios pasan. Consultar al usuario si surgen dudas.
 
-- [ ] 11. Implementar eliminación de contenedores
-  - [~] 11.1 Agregar eliminación de contenedores en `app/index.tsx`
+- [x] 11. Implementar eliminación de contenedores
+  - [x] 11.1 Agregar eliminación de contenedores en `app/index.tsx`
     - Al tocar la acción de eliminar en `ContenedorItem`, mostrar `ConfirmDialog` con "¿Eliminar este contenedor y todos sus objetos?"
     - Al confirmar, llamar `getObjetosFotoUriByContenedor` para obtener todas las rutas de imagen del contenedor; si hay rutas, llamar `deleteImagesFromStorage` antes de proceder
     - Llamar `deleteContenedor` y recargar la lista de contenedores
@@ -342,8 +342,8 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Caso: error de BD al eliminar → muestra mensaje de error
     - _Requirements: 7.2, 7.4, 7.5, 7.6_
 
-- [ ] 12. Implementar pantalla de Búsqueda
-  - [~] 12.1 Crear `app/busqueda.tsx` — Búsqueda global de objetos
+- [x] 12. Implementar pantalla de Búsqueda
+  - [x] 12.1 Crear `app/busqueda.tsx` — Búsqueda global de objetos
     - Renderizar `TextInput` como barra de búsqueda
     - Al cambiar el texto, llamar `searchObjetos` con el query y almacenar resultados en estado local
     - Renderizar `FlatList` con cada resultado mostrando nombre del objeto y nombre del contenedor
@@ -352,7 +352,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Cuando el campo está vacío, mostrar lista vacía (sin resultados)
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6_
 
-  - [~] 12.2 Agregar acceso a búsqueda desde `app/index.tsx`
+  - [x] 12.2 Agregar acceso a búsqueda desde `app/index.tsx`
     - Agregar botón o ícono de búsqueda en la barra de navegación de la Lista de Contenedores
     - Al tocar, navegar a `/busqueda`
     - _Requirements: 8.1_
@@ -377,7 +377,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Caso: tocar resultado → navega al detalle del contenedor correcto
     - _Requirements: 8.4, 8.5, 8.6_
 
-- [~] 13. Checkpoint final — Verificar integración completa
+- [x] 13. Checkpoint final — Verificar integración completa
   - Asegurarse de que todos los tests pasan (smoke, unit, property-based, componentes, pantallas). Consultar al usuario si surgen dudas.
 
 ## Notas
