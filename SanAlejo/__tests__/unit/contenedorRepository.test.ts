@@ -11,6 +11,7 @@ import {
   getAllContenedores,
   getContenedorById,
   insertContenedor,
+  updateContenedor,
 } from '../../src/db/contenedorRepository';
 
 // ---------------------------------------------------------------------------
@@ -125,6 +126,64 @@ describe('Property 4: Round-trip de inserción de contenedor', () => {
             retrieved.nombre === nombre &&
             retrieved.descripcion === descripcion &&
             retrieved.ubicacion === ubicacion
+          );
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Property 5: Round-trip de actualización de contenedor
+// ---------------------------------------------------------------------------
+
+// Feature: san-alejo-app, Property 5: Round-trip de actualización de contenedor
+describe('Property 5: Round-trip de actualización de contenedor', () => {
+  it('actualizar un contenedor y recuperarlo por id retorna exactamente los nuevos valores', async () => {
+    /**
+     * Validates: Requirements 3.6
+     *
+     * For any existing contenedor and any set of valid new values, updating
+     * the contenedor and then querying it by id must return exactly the new
+     * values — not the original ones.
+     */
+    await fc.assert(
+      fc.asyncProperty(
+        // Original data
+        fc.record({
+          nombre: fc.string({ minLength: 1, maxLength: 80 }).filter((s) => s.trim().length > 0),
+          descripcion: fc.string({ minLength: 1, maxLength: 200 }).filter((s) => s.trim().length > 0),
+          ubicacion: fc.string({ minLength: 1, maxLength: 100 }).filter((s) => s.trim().length > 0),
+        }),
+        // New (updated) data
+        fc.record({
+          nombre: fc.string({ minLength: 1, maxLength: 80 }).filter((s) => s.trim().length > 0),
+          descripcion: fc.string({ minLength: 1, maxLength: 200 }).filter((s) => s.trim().length > 0),
+          ubicacion: fc.string({ minLength: 1, maxLength: 100 }).filter((s) => s.trim().length > 0),
+        }),
+        async (original, updated) => {
+          // Fresh in-memory DB per property run
+          const db = await openDatabaseAsync(':memory:');
+          await initializeDatabase(db as any);
+
+          // Insert the original contenedor
+          const id = await insertContenedor(db as any, original);
+
+          // Update with new values
+          await updateContenedor(db as any, id, updated);
+
+          // Retrieve by id
+          const retrieved = await getContenedorById(db as any, id);
+
+          await db.closeAsync();
+
+          // Must not be null and all fields must reflect the updated values
+          if (retrieved === null) return false;
+          return (
+            retrieved.nombre === updated.nombre &&
+            retrieved.descripcion === updated.descripcion &&
+            retrieved.ubicacion === updated.ubicacion
           );
         }
       ),

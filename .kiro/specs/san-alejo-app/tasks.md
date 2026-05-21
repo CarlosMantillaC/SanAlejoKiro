@@ -49,7 +49,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - **Validates: Requirements 3.5**
     - Usar `fc.record({ nombre, descripcion, ubicacion })` con strings no vacíos, insertar y consultar por id, verificar que los valores retornados son idénticos a los insertados
 
-  - [ ]* 2.6 Escribir property test — Property 5: Round-trip de actualización de contenedor
+  - [x] 2.6 Escribir property test — Property 5: Round-trip de actualización de contenedor
     - Escribir en `__tests__/unit/contenedorRepository.test.ts`
     - **Property 5: Round-trip de actualización de contenedor**
     - **Validates: Requirements 3.6**
