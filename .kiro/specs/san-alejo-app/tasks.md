@@ -102,7 +102,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - **Validates: Requirements 3.3, 5.3**
     - Usar `fc.stringOf(fc.constantFrom(' ', '\t', '\n', '\r')).filter(s => s.length > 0)` y verificar que `validateFields` retorna `valid: false` con el campo en `errors`
 
-  - [ ]* 3.3 Escribir unit tests para `validateFields`
+  - [x] 3.3 Escribir unit tests para `validateFields`
     - Escribir en `__tests__/unit/validator.test.ts`
     - Caso: todos los campos válidos → `valid: true`, `errors` vacío
     - Caso: un campo vacío → `valid: false`, error solo para ese campo
