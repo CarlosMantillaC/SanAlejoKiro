@@ -96,7 +96,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Rechazar campos cuyo `value.trim().length === 0` con mensaje `"El campo \"[key]\" es obligatorio."`
     - _Requirements: 3.3, 3.4, 5.3, 5.4_
 
-  - [ ]* 3.2 Escribir property test — Property 3: Validación rechaza whitespace
+  - [x] 3.2 Escribir property test — Property 3: Validación rechaza whitespace
     - Escribir en `__tests__/unit/validator.test.ts`
     - **Property 3: Validación de campos obligatorios rechaza whitespace**
     - **Validates: Requirements 3.3, 5.3**
