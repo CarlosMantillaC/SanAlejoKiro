@@ -10,6 +10,8 @@ import { initializeDatabase } from '../../src/db/schema';
 import { insertContenedor, deleteContenedor } from '../../src/db/contenedorRepository';
 import {
   getObjetosByContenedor,
+  getObjetoById,
+  getObjetosFotoUriByContenedor,
   insertObjeto,
   updateObjeto,
   Objeto,
@@ -76,6 +78,7 @@ describe('Property 7: Aislamiento de objetos por contenedor', () => {
               await insertObjeto(db as any, {
                 ...obj,
                 id_contenedor: idContenedorA,
+                foto_uri: null,
               });
             }
 
@@ -84,6 +87,7 @@ describe('Property 7: Aislamiento de objetos por contenedor', () => {
               await insertObjeto(db as any, {
                 ...obj,
                 id_contenedor: idContenedorB,
+                foto_uri: null,
               });
             }
 
@@ -145,6 +149,7 @@ describe('Property 8: Round-trip de inserción de objeto', () => {
             const insertedId = await insertObjeto(db as any, {
               ...objetoData,
               id_contenedor: idContenedor,
+              foto_uri: null,
             });
 
             // Retrieve all objects for the contenedor and find by id
@@ -205,12 +210,14 @@ describe('Property 9: Round-trip de actualización de objeto', () => {
             const insertedId = await insertObjeto(db as any, {
               ...originalData,
               id_contenedor: idContenedor,
+              foto_uri: null,
             });
 
             // Update with new values
             await updateObjeto(db as any, insertedId, {
               nombre: updatedData.nombre,
               descripcion: updatedData.descripcion,
+              foto_uri: null,
             });
 
             // Retrieve and find the updated objeto
@@ -275,6 +282,7 @@ describe('Property 10: Eliminación en cascada de objetos al eliminar contenedor
               await insertObjeto(db as any, {
                 ...obj,
                 id_contenedor: idContenedor,
+                foto_uri: null,
               });
             }
 
@@ -288,6 +296,131 @@ describe('Property 10: Eliminación en cascada de objetos al eliminar contenedor
 
             // Must return empty array regardless of how many objetos were inserted
             return result.length === 0;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    }
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Property 14: Round-trip de foto en objeto
+// ---------------------------------------------------------------------------
+
+// Feature: san-alejo-app, Property 14: Round-trip de foto en objeto
+describe('Property 14: Round-trip de foto en objeto', () => {
+  it(
+    'insertar un objeto con foto_uri y consultarlo por id retorna la misma ruta (o null)',
+    async () => {
+      /**
+       * Validates: Requirements 10.5, 10.6
+       *
+       * Para cualquier objeto con foto_uri (incluyendo null), insertar el objeto
+       * y luego consultarlo por su id debe retornar exactamente la misma ruta de
+       * foto (o null) que fue persistida.
+       */
+      const fotoUriArb = fc.oneof(
+        fc.constant(null),
+        fc.string({ minLength: 1, maxLength: 200 }).map(s => `file:///images/${s}.jpg`)
+      );
+
+      await fc.assert(
+        fc.asyncProperty(
+          contenedorArb,
+          objetoDataArb,
+          fotoUriArb,
+          async (contenedorData, objetoData, fotoUri) => {
+            // Fresh in-memory DB per property run
+            const db = await openDatabaseAsync(':memory:');
+            await initializeDatabase(db as any);
+
+            // Create a contenedor to satisfy the foreign key constraint
+            const idContenedor = await insertContenedor(db as any, contenedorData);
+
+            // Insert the objeto with foto_uri
+            const insertedId = await insertObjeto(db as any, {
+              ...objetoData,
+              id_contenedor: idContenedor,
+              foto_uri: fotoUri,
+            });
+
+            // Retrieve by id using getObjetoById
+            const retrieved = await getObjetoById(db as any, insertedId);
+
+            await db.closeAsync();
+
+            // Must exist and foto_uri must match exactly
+            return retrieved !== null && retrieved.foto_uri === fotoUri;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    }
+  );
+});
+
+// ---------------------------------------------------------------------------
+// getObjetosFotoUriByContenedor: solo retorna rutas no nulas
+// ---------------------------------------------------------------------------
+
+describe('getObjetosFotoUriByContenedor', () => {
+  it(
+    'retorna solo las rutas foto_uri no nulas de los objetos del contenedor',
+    async () => {
+      /**
+       * Validates: Requirements 10.10
+       *
+       * Para cualquier contenedor con objetos que tienen foto_uri nulo o no nulo,
+       * getObjetosFotoUriByContenedor debe retornar exactamente las rutas no nulas.
+       */
+      const fotoUriArb = fc.oneof(
+        fc.constant(null),
+        fc.string({ minLength: 1, maxLength: 100 }).map(s => `file:///images/${s}.jpg`)
+      );
+
+      const objetoConFotoArb = fc.record({
+        nombre: fc.string({ minLength: 1, maxLength: 80 }),
+        descripcion: fc.string({ minLength: 1, maxLength: 200 }),
+        foto_uri: fotoUriArb,
+      });
+
+      await fc.assert(
+        fc.asyncProperty(
+          fc.array(objetoConFotoArb, { minLength: 0, maxLength: 15 }),
+          async (objetos) => {
+            const db = await openDatabaseAsync(':memory:');
+            await initializeDatabase(db as any);
+
+            const idContenedor = await insertContenedor(db as any, {
+              nombre: 'Contenedor Fotos',
+              descripcion: 'Para prueba de fotos',
+              ubicacion: 'Ubicacion Fotos',
+            });
+
+            for (const obj of objetos) {
+              await insertObjeto(db as any, {
+                nombre: obj.nombre,
+                descripcion: obj.descripcion,
+                id_contenedor: idContenedor,
+                foto_uri: obj.foto_uri,
+              });
+            }
+
+            const uris = await getObjetosFotoUriByContenedor(db as any, idContenedor);
+
+            await db.closeAsync();
+
+            // Expected: only non-null foto_uri values
+            const expectedUris = objetos
+              .map(o => o.foto_uri)
+              .filter((u): u is string => u !== null);
+
+            // Count must match
+            if (uris.length !== expectedUris.length) return false;
+
+            // All returned uris must be non-null strings
+            return uris.every(u => typeof u === 'string' && u.length > 0);
           }
         ),
         { numRuns: 100 }
