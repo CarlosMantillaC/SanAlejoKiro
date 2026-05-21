@@ -22,7 +22,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Implementar patrón de migración con `PRAGMA user_version = 1`
     - _Requirements: 1.1, 1.2, 1.3_
 
-  - [ ]* 2.2 Smoke tests de inicialización de base de datos
+  - [x] 2.2 Smoke tests de inicialización de base de datos
     - Escribir `__tests__/smoke/database.test.ts`
     - Verificar que las tablas `contenedor` y `objeto` existen tras `initializeDatabase`
     - Verificar que `PRAGMA foreign_keys` está activo (retorna 1)
