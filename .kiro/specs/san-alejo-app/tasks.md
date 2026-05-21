@@ -71,7 +71,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - **Validates: Requirements 4.2**
     - Crear dos contenedores, insertar N objetos en el primero y M en el segundo, verificar que `getObjetosByContenedor` retorna exactamente N objetos para el primero y M para el segundo sin mezcla
 
-  - [ ]* 2.9 Escribir property test — Property 8: Round-trip de inserción de objeto
+  - [x] 2.9 Escribir property test — Property 8: Round-trip de inserción de objeto
     - Escribir en `__tests__/unit/objetoRepository.test.ts`
     - **Property 8: Round-trip de inserción de objeto**
     - **Validates: Requirements 5.5**

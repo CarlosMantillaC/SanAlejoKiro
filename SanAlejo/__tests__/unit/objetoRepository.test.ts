@@ -11,6 +11,7 @@ import { insertContenedor } from '../../src/db/contenedorRepository';
 import {
   getObjetosByContenedor,
   insertObjeto,
+  Objeto,
 } from '../../src/db/objetoRepository';
 
 // ---------------------------------------------------------------------------
@@ -102,6 +103,66 @@ describe('Property 7: Aislamiento de objetos por contenedor', () => {
             if (resultB.some((o) => o.id_contenedor !== idContenedorB)) return false;
 
             return true;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    }
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Property 8: Round-trip de inserción de objeto
+// ---------------------------------------------------------------------------
+
+// Feature: san-alejo-app, Property 8: Round-trip de inserción de objeto
+describe('Property 8: Round-trip de inserción de objeto', () => {
+  it(
+    'insertar un objeto y consultarlo por id retorna exactamente los mismos valores',
+    async () => {
+      /**
+       * Validates: Requirements 5.5
+       *
+       * Para cualquier conjunto de valores válidos (nombre, descripción) y un
+       * id_contenedor existente, insertar un objeto y luego consultarlo por su
+       * id debe retornar exactamente los mismos valores incluyendo el
+       * id_contenedor correcto.
+       */
+      await fc.assert(
+        fc.asyncProperty(
+          contenedorArb,
+          objetoDataArb,
+          async (contenedorData, objetoData) => {
+            // Fresh in-memory DB per property run
+            const db = await openDatabaseAsync(':memory:');
+            await initializeDatabase(db as any);
+
+            // Create a contenedor to satisfy the foreign key constraint
+            const idContenedor = await insertContenedor(db as any, contenedorData);
+
+            // Insert the objeto
+            const insertedId = await insertObjeto(db as any, {
+              ...objetoData,
+              id_contenedor: idContenedor,
+            });
+
+            // Retrieve all objects for the contenedor and find by id
+            const allObjetos = await getObjetosByContenedor(db as any, idContenedor);
+            const retrieved: Objeto | undefined = allObjetos.find(
+              (o) => o.id === insertedId
+            );
+
+            await db.closeAsync();
+
+            // Must exist
+            if (!retrieved) return false;
+
+            // All fields must match exactly
+            return (
+              retrieved.nombre === objetoData.nombre &&
+              retrieved.descripcion === objetoData.descripcion &&
+              retrieved.id_contenedor === idContenedor
+            );
           }
         ),
         { numRuns: 100 }
