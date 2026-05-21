@@ -89,8 +89,8 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - **Validates: Requirements 7.3**
     - Crear un contenedor con N objetos (N ≥ 0), eliminar el contenedor, verificar que `getObjetosByContenedor` retorna lista vacía para ese `id_contenedor`
 
-- [ ] 3. Implementar módulo de validación
-  - [ ] 3.1 Crear `src/utils/validator.ts`
+- [x] 3. Implementar módulo de validación
+  - [x] 3.1 Crear `src/utils/validator.ts`
     - Definir interfaz `ValidationResult { valid: boolean; errors: Record<string, string> }`
     - Implementar `validateFields(fields: Record<string, string>): ValidationResult`
     - Rechazar campos cuyo `value.trim().length === 0` con mensaje `"El campo \"[key]\" es obligatorio."`
