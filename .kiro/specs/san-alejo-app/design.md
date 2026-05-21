@@ -64,16 +64,18 @@ app/
 
 src/
 ├── db/
-│   ├── schema.ts            ← DDL: CREATE TABLE statements
+│   ├── schema.ts            ← DDL: CREATE TABLE statements + migraciones
 │   ├── contenedorRepository.ts
 │   └── objetoRepository.ts
 ├── utils/
-│   └── validator.ts         ← Validación de campos
+│   ├── validator.ts         ← Validación de campos
+│   └── imageStorage.ts      ← Copia y eliminación de archivos de imagen
 └── components/
     ├── ContenedorItem.tsx
     ├── ObjetoItem.tsx
     ├── FAB.tsx
-    └── ConfirmDialog.tsx
+    ├── ConfirmDialog.tsx
+    └── ImagePickerButton.tsx ← Selector/captura de foto con vista previa
 ```
 
 ---
@@ -82,33 +84,161 @@ src/
 
 ### Database Initialization (`src/db/schema.ts`)
 
+El código canónico de `initializeDatabase` es el de la sección **Migración de base de datos** más abajo (versión 2 con migraciones incrementales). El fragmento a continuación es solo referencia del DDL inicial; la implementación real debe usar el patrón de `user_version`.
+
 ```typescript
 import { SQLiteDatabase } from 'expo-sqlite';
 
+// Ver implementación completa en la sección "Migración de base de datos"
 export async function initializeDatabase(db: SQLiteDatabase): Promise<void> {
-  await db.execAsync(`
-    PRAGMA journal_mode = WAL;
-    PRAGMA foreign_keys = ON;
-
-    CREATE TABLE IF NOT EXISTS contenedor (
-      id          INTEGER PRIMARY KEY AUTOINCREMENT,
-      nombre      TEXT NOT NULL,
-      descripcion TEXT NOT NULL,
-      ubicacion   TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS objeto (
-      id            INTEGER PRIMARY KEY AUTOINCREMENT,
-      nombre        TEXT NOT NULL,
-      descripcion   TEXT NOT NULL,
-      id_contenedor INTEGER NOT NULL,
-      FOREIGN KEY (id_contenedor) REFERENCES contenedor(id) ON DELETE CASCADE
-    );
-  `);
+  // DATABASE_VERSION = 2
+  // Versión 0 → 1: crea tablas contenedor y objeto (sin foto_uri)
+  // Versión 1 → 2: ALTER TABLE objeto ADD COLUMN foto_uri TEXT
 }
 ```
 
 > **Nota**: `PRAGMA foreign_keys = ON` debe ejecutarse en cada conexión porque SQLite lo desactiva por defecto. El `onInit` de `SQLiteProvider` es el lugar correcto para esto.
+
+### Image Storage (`src/utils/imageStorage.ts`)
+
+Módulo puro de utilidades para gestionar archivos de imagen en el sistema de archivos del dispositivo. Todas las operaciones de eliminación son silenciosas ante archivos inexistentes.
+
+```typescript
+import * as FileSystem from 'expo-file-system';
+import { randomUUID } from 'expo-crypto';
+
+const IMAGES_DIR = FileSystem.documentDirectory + 'images/';
+
+/** Asegura que el directorio de imágenes existe antes de copiar. */
+async function ensureImagesDirExists(): Promise<void> {
+  const info = await FileSystem.getInfoAsync(IMAGES_DIR);
+  if (!info.exists) {
+    await FileSystem.makeDirectoryAsync(IMAGES_DIR, { intermediates: true });
+  }
+}
+
+/**
+ * Copia una imagen al directorio persistente de la app.
+ * Retorna la ruta de destino (dentro de images/).
+ */
+export async function copyImageToStorage(sourceUri: string): Promise<string> {
+  await ensureImagesDirExists();
+  const extension = sourceUri.split('.').pop() ?? 'jpg';
+  const destUri = `${IMAGES_DIR}${randomUUID()}.${extension}`;
+  await FileSystem.copyAsync({ from: sourceUri, to: destUri });
+  return destUri;
+}
+
+/**
+ * Elimina un archivo de imagen si existe.
+ * No lanza error si el archivo no existe.
+ */
+export async function deleteImageFromStorage(uri: string): Promise<void> {
+  const info = await FileSystem.getInfoAsync(uri);
+  if (info.exists) {
+    await FileSystem.deleteAsync(uri, { idempotent: true });
+  }
+}
+
+/**
+ * Elimina múltiples archivos de imagen (para cascade delete).
+ * Ignora archivos que no existen.
+ */
+export async function deleteImagesFromStorage(uris: string[]): Promise<void> {
+  await Promise.all(uris.map(deleteImageFromStorage));
+}
+```
+
+### ImagePickerButton (`src/components/ImagePickerButton.tsx`)
+
+Componente reutilizable que encapsula la solicitud de permisos y la selección/captura de imagen. Muestra una vista previa si ya hay una imagen seleccionada.
+
+```typescript
+import * as ImagePicker from 'expo-image-picker';
+import { Image, Pressable, Text, View, StyleSheet } from 'react-native';
+
+interface ImagePickerButtonProps {
+  currentUri: string | null;
+  onImageSelected: (uri: string) => void;
+  onPermissionDenied: () => void;
+}
+
+export function ImagePickerButton({
+  currentUri,
+  onImageSelected,
+  onPermissionDenied,
+}: ImagePickerButtonProps) {
+  async function requestAndLaunch(
+    launcher: () => Promise<ImagePicker.ImagePickerResult>
+  ) {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      onPermissionDenied();
+      return;
+    }
+    const result = await launcher();
+    if (!result.canceled && result.assets.length > 0) {
+      onImageSelected(result.assets[0].uri);
+    }
+  }
+
+  async function handleGallery() {
+    await requestAndLaunch(() =>
+      ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+      })
+    );
+  }
+
+  async function handleCamera() {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      onPermissionDenied();
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets.length > 0) {
+      onImageSelected(result.assets[0].uri);
+    }
+  }
+
+  return (
+    <View>
+      {currentUri ? (
+        <Image
+          source={{ uri: currentUri }}
+          style={styles.preview}
+          accessibilityLabel="Vista previa de la foto del objeto"
+        />
+      ) : null}
+      <Pressable
+        onPress={handleCamera}
+        accessibilityRole="button"
+        accessibilityLabel="Tomar foto del objeto"
+      >
+        <Text>Tomar foto</Text>
+      </Pressable>
+      <Pressable
+        onPress={handleGallery}
+        accessibilityRole="button"
+        accessibilityLabel="Seleccionar foto de galería"
+      >
+        <Text>{currentUri ? 'Cambiar foto' : 'Seleccionar de galería'}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  preview: { width: 120, height: 120, borderRadius: 8, marginBottom: 8 },
+});
+```
 
 ### Root Layout (`app/_layout.tsx`)
 
@@ -195,6 +325,7 @@ export interface Objeto {
   nombre: string;
   descripcion: string;
   id_contenedor: number;
+  foto_uri: string | null;
 }
 
 export interface ObjetoConContenedor extends Objeto {
@@ -211,13 +342,22 @@ export async function getObjetosByContenedor(
   );
 }
 
+export async function getObjetoById(
+  db: SQLiteDatabase,
+  id: number
+): Promise<Objeto | null> {
+  return db.getFirstAsync<Objeto>(
+    'SELECT * FROM objeto WHERE id = ?', id
+  );
+}
+
 export async function insertObjeto(
   db: SQLiteDatabase,
   data: Omit<Objeto, 'id'>
 ): Promise<number> {
   const result = await db.runAsync(
-    'INSERT INTO objeto (nombre, descripcion, id_contenedor) VALUES (?, ?, ?)',
-    data.nombre, data.descripcion, data.id_contenedor
+    'INSERT INTO objeto (nombre, descripcion, id_contenedor, foto_uri) VALUES (?, ?, ?, ?)',
+    data.nombre, data.descripcion, data.id_contenedor, data.foto_uri
   );
   return result.lastInsertRowId;
 }
@@ -225,16 +365,31 @@ export async function insertObjeto(
 export async function updateObjeto(
   db: SQLiteDatabase,
   id: number,
-  data: Pick<Objeto, 'nombre' | 'descripcion'>
+  data: Pick<Objeto, 'nombre' | 'descripcion' | 'foto_uri'>
 ): Promise<void> {
   await db.runAsync(
-    'UPDATE objeto SET nombre = ?, descripcion = ? WHERE id = ?',
-    data.nombre, data.descripcion, id
+    'UPDATE objeto SET nombre = ?, descripcion = ?, foto_uri = ? WHERE id = ?',
+    data.nombre, data.descripcion, data.foto_uri, id
   );
 }
 
 export async function deleteObjeto(db: SQLiteDatabase, id: number): Promise<void> {
   await db.runAsync('DELETE FROM objeto WHERE id = ?', id);
+}
+
+/**
+ * Retorna todas las rutas de foto no nulas de los objetos de un contenedor.
+ * Se usa para limpiar archivos en cascada antes de eliminar el contenedor.
+ */
+export async function getObjetosFotoUriByContenedor(
+  db: SQLiteDatabase,
+  id_contenedor: number
+): Promise<string[]> {
+  const rows = await db.getAllAsync<{ foto_uri: string }>(
+    'SELECT foto_uri FROM objeto WHERE id_contenedor = ? AND foto_uri IS NOT NULL',
+    id_contenedor
+  );
+  return rows.map(r => r.foto_uri);
 }
 
 export async function searchObjetos(
@@ -325,12 +480,13 @@ CREATE TABLE IF NOT EXISTS contenedor (
   ubicacion   TEXT NOT NULL
 );
 
--- Tabla de objetos
+-- Tabla de objetos (versión 2: incluye foto_uri)
 CREATE TABLE IF NOT EXISTS objeto (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   nombre        TEXT NOT NULL,
   descripcion   TEXT NOT NULL,
   id_contenedor INTEGER NOT NULL,
+  foto_uri      TEXT,
   FOREIGN KEY (id_contenedor) REFERENCES contenedor(id) ON DELETE CASCADE
 );
 ```
@@ -350,6 +506,7 @@ erDiagram
         text nombre
         text descripcion
         int id_contenedor FK
+        text foto_uri "nullable"
     }
     CONTENEDOR ||--o{ OBJETO : "contiene"
 ```
@@ -370,6 +527,7 @@ interface Objeto {
   nombre: string;
   descripcion: string;
   id_contenedor: number;
+  foto_uri: string | null;
 }
 
 // Resultado de búsqueda (join)
@@ -384,29 +542,51 @@ type ObjetoInput = Omit<Objeto, 'id'>;
 
 ### Migración de base de datos
 
-Se usa el patrón de versión con `PRAGMA user_version` para gestionar migraciones futuras:
+Se usa el patrón de versión con `PRAGMA user_version` para gestionar migraciones incrementales. La versión 1 crea las tablas base; la versión 2 agrega la columna `foto_uri` a `objeto` mediante `ALTER TABLE`.
 
 ```typescript
 export async function initializeDatabase(db: SQLiteDatabase): Promise<void> {
-  const DATABASE_VERSION = 1;
+  const DATABASE_VERSION = 2;
+
+  await db.execAsync('PRAGMA foreign_keys = ON;');
+
   const { user_version } = await db.getFirstAsync<{ user_version: number }>(
     'PRAGMA user_version'
-  );
+  ) ?? { user_version: 0 };
 
   if (user_version >= DATABASE_VERSION) return;
 
   if (user_version === 0) {
     await db.execAsync(`
       PRAGMA journal_mode = WAL;
-      PRAGMA foreign_keys = ON;
-      CREATE TABLE IF NOT EXISTS contenedor ( ... );
-      CREATE TABLE IF NOT EXISTS objeto ( ... );
+      CREATE TABLE IF NOT EXISTS contenedor (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre      TEXT NOT NULL,
+        descripcion TEXT NOT NULL,
+        ubicacion   TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS objeto (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre        TEXT NOT NULL,
+        descripcion   TEXT NOT NULL,
+        id_contenedor INTEGER NOT NULL,
+        FOREIGN KEY (id_contenedor) REFERENCES contenedor(id) ON DELETE CASCADE
+      );
     `);
   }
 
-  await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
+  if (user_version < 2) {
+    // Migración 1 → 2: agregar columna foto_uri (nullable)
+    await db.execAsync(
+      'ALTER TABLE objeto ADD COLUMN foto_uri TEXT;'
+    );
+  }
+
+  await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION};`);
 }
 ```
+
+> **Nota**: `ALTER TABLE ... ADD COLUMN` en SQLite solo permite agregar columnas al final de la tabla y no admite `NOT NULL` sin valor por defecto. La columna `foto_uri TEXT` (nullable) cumple ambas restricciones. Los registros existentes quedan con `foto_uri = null` automáticamente.
 
 ---
 
@@ -512,9 +692,33 @@ export async function initializeDatabase(db: SQLiteDatabase): Promise<void> {
 
 ### Property 13: Precarga de datos en modo edición
 
-*Para cualquier* contenedor u objeto con datos arbitrarios, abrir el formulario en modo edición debe inicializar los campos con exactamente los valores actuales del registro.
+*Para cualquier* contenedor u objeto con datos arbitrarios, abrir el formulario en modo edición debe inicializar los campos con exactamente los valores actuales del registro, incluyendo `foto_uri` cuando corresponda.
 
-**Validates: Requirements 9.5**
+**Validates: Requirements 9.5, 10.8**
+
+---
+
+### Property 14: Round-trip de foto en objeto
+
+*Para cualquier* objeto con `foto_uri` (incluyendo `null`), insertar el objeto y luego consultarlo por su id debe retornar exactamente la misma ruta de foto (o `null`) que fue persistida.
+
+**Validates: Requirements 10.5, 10.6**
+
+---
+
+### Property 15: Limpieza de archivo al eliminar objeto con foto
+
+*Para cualquier* objeto cuyo `foto_uri` no es null, al eliminar ese objeto la función `deleteImageFromStorage` debe ser invocada con esa ruta, de modo que el archivo ya no exista en el FileSystem tras la operación.
+
+**Validates: Requirements 10.9**
+
+---
+
+### Property 16: Limpieza en cascada de fotos al eliminar contenedor
+
+*Para cualquier* contenedor con N objetos que tienen `foto_uri` no nulos, al eliminar el contenedor la función `deleteImagesFromStorage` debe ser invocada con todas las rutas de imagen, de modo que ningún archivo de imagen de esos objetos persista en el FileSystem.
+
+**Validates: Requirements 10.10**
 
 ---
 
@@ -550,6 +754,9 @@ async function handleSave() {
 | Fallo al actualizar objeto | "No se pudo guardar el objeto." |
 | Fallo al eliminar objeto | "No se pudo eliminar el objeto." |
 | Campo obligatorio vacío | "El campo '[nombre]' es obligatorio." |
+| Permiso de cámara/galería denegado | "Debes conceder permiso de acceso a la galería o cámara en la configuración del dispositivo." |
+| FileSystem falla al copiar imagen | "No se pudo procesar la foto. El objeto se guardará sin imagen." |
+| FileSystem falla al eliminar imagen | "No se pudo eliminar el archivo de imagen, pero el objeto fue eliminado." |
 
 ### Error de inicialización de BD
 
@@ -582,6 +789,30 @@ La estrategia combina pruebas de ejemplo (unit tests) para comportamientos espec
 | **fast-check** | Librería de property-based testing para TypeScript/JavaScript |
 | **@testing-library/react-native** | Renderizado y queries de componentes React Native |
 
+### Mocks de módulos nativos
+
+Además del mock existente de `expo-sqlite`, se requieren mocks para los módulos de imagen:
+
+```javascript
+// __mocks__/expo-file-system.js
+module.exports = {
+  documentDirectory: 'file:///data/user/0/com.app/files/',
+  getInfoAsync: jest.fn().mockResolvedValue({ exists: false }),
+  makeDirectoryAsync: jest.fn().mockResolvedValue(undefined),
+  copyAsync: jest.fn().mockResolvedValue(undefined),
+  deleteAsync: jest.fn().mockResolvedValue(undefined),
+};
+
+// __mocks__/expo-image-picker.js
+module.exports = {
+  requestMediaLibraryPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  requestCameraPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  launchImageLibraryAsync: jest.fn().mockResolvedValue({ canceled: true, assets: [] }),
+  launchCameraAsync: jest.fn().mockResolvedValue({ canceled: true, assets: [] }),
+  MediaTypeOptions: { Images: 'Images' },
+};
+```
+
 ### Pruebas de propiedades (property-based tests)
 
 Se usa [fast-check](https://fast-check.dev/) para generar inputs aleatorios. Cada test de propiedad ejecuta mínimo **100 iteraciones**.
@@ -595,7 +826,8 @@ Cada test debe incluir un comentario de trazabilidad:
 
 - `src/utils/validator.ts` — Propiedades 3
 - `src/db/contenedorRepository.ts` — Propiedades 1, 2, 4, 5
-- `src/db/objetoRepository.ts` — Propiedades 7, 8, 9, 10, 11, 12
+- `src/db/objetoRepository.ts` — Propiedades 7, 8, 9, 10, 11, 12, 14
+- `src/utils/imageStorage.ts` — Propiedades 15, 16
 - Componentes de formulario — Propiedad 13
 
 **Ejemplo de test de propiedad:**
@@ -678,11 +910,13 @@ __tests__/
 ├── unit/
 │   ├── validator.test.ts
 │   ├── contenedorRepository.test.ts
-│   └── objetoRepository.test.ts
+│   ├── objetoRepository.test.ts
+│   └── imageStorage.test.ts        ← Propiedades 15, 16 (con mocks de expo-file-system)
 ├── components/
 │   ├── ContenedorItem.test.tsx
 │   ├── ObjetoItem.test.tsx
-│   └── ConfirmDialog.test.tsx
+│   ├── ConfirmDialog.test.tsx
+│   └── ImagePickerButton.test.tsx  ← Tests de permisos y selección de imagen
 ├── screens/
 │   ├── ListaContenedores.test.tsx
 │   ├── DetalleContenedor.test.tsx
