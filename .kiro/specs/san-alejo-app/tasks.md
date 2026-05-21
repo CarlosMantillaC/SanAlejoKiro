@@ -65,7 +65,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Implementar `searchObjetos`: JOIN con contenedor, filtro LIKE en nombre y descripcion con `COLLATE NOCASE`
     - _Requirements: 4.2, 5.5, 5.6, 6.3, 8.2, 8.3_
 
-  - [ ]* 2.8 Escribir property test — Property 7: Aislamiento de objetos por contenedor
+  - [x] 2.8 Escribir property test — Property 7: Aislamiento de objetos por contenedor
     - Escribir en `__tests__/unit/objetoRepository.test.ts`
     - **Property 7: Aislamiento de objetos por contenedor**
     - **Validates: Requirements 4.2**
