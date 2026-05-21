@@ -109,7 +109,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Caso: múltiples campos vacíos → `valid: false`, error para cada campo vacío
     - _Requirements: 3.3, 3.4, 5.3, 5.4_
 
-- [ ] 4. Checkpoint — Verificar capa de datos y validación
+- [x] 4. Checkpoint — Verificar capa de datos y validación
   - Asegurarse de que todos los tests de la capa de datos y validación pasan. Consultar al usuario si surgen dudas.
 
 - [ ] 5. Implementar componentes reutilizables de UI
