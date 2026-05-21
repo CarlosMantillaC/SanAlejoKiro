@@ -9,6 +9,7 @@ import { openDatabaseAsync } from 'expo-sqlite';
 import { initializeDatabase } from '../../src/db/schema';
 import {
   getAllContenedores,
+  getContenedorById,
   insertContenedor,
 } from '../../src/db/contenedorRepository';
 
@@ -81,6 +82,50 @@ describe('Property 1: getAllContenedores retorna contenedores ordenados por nomb
 
           await db.closeAsync();
           return result.length === contenedores.length;
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Property 4: Round-trip de inserción de contenedor
+// ---------------------------------------------------------------------------
+
+// Feature: san-alejo-app, Property 4: Round-trip de inserción de contenedor
+describe('Property 4: Round-trip de inserción de contenedor', () => {
+  it('insertar un contenedor y recuperarlo por id retorna exactamente los mismos datos', async () => {
+    /**
+     * Validates: Requirements 2.1
+     */
+    await fc.assert(
+      fc.asyncProperty(
+        fc.record({
+          nombre: fc.string({ minLength: 1, maxLength: 80 }).filter((s) => s.trim().length > 0),
+          descripcion: fc.string({ minLength: 1, maxLength: 200 }).filter((s) => s.trim().length > 0),
+          ubicacion: fc.string({ minLength: 1, maxLength: 100 }).filter((s) => s.trim().length > 0),
+        }),
+        async ({ nombre, descripcion, ubicacion }) => {
+          // Fresh in-memory DB per property run
+          const db = await openDatabaseAsync(':memory:');
+          await initializeDatabase(db as any);
+
+          // Insert and capture the returned id
+          const id = await insertContenedor(db as any, { nombre, descripcion, ubicacion });
+
+          // Retrieve by id
+          const retrieved = await getContenedorById(db as any, id);
+
+          await db.closeAsync();
+
+          // Must not be null and all fields must match exactly
+          if (retrieved === null) return false;
+          return (
+            retrieved.nombre === nombre &&
+            retrieved.descripcion === descripcion &&
+            retrieved.ubicacion === ubicacion
+          );
         }
       ),
       { numRuns: 100 }

@@ -43,7 +43,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - **Validates: Requirements 2.1**
     - Usar `fc.array(fc.record({ nombre, descripcion, ubicacion }))` para insertar N contenedores con nombres arbitrarios y verificar que `getAllContenedores` retorna la lista ordenada alfabéticamente por nombre ASC
 
-  - [ ]* 2.5 Escribir property test — Property 4: Round-trip de inserción de contenedor
+  - [x] 2.5 Escribir property test — Property 4: Round-trip de inserción de contenedor
     - Escribir en `__tests__/unit/contenedorRepository.test.ts`
     - **Property 4: Round-trip de inserción de contenedor**
     - **Validates: Requirements 3.5**
