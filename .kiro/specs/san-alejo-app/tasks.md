@@ -37,7 +37,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Implementar `deleteContenedor`: `DELETE FROM contenedor WHERE id = ?`
     - _Requirements: 2.1, 3.5, 3.6, 7.3_
 
-  - [ ]* 2.4 Escribir property test — Property 1: Ordenamiento de contenedores
+  - [x] 2.4 Escribir property test — Property 1: Ordenamiento de contenedores
     - Escribir en `__tests__/unit/contenedorRepository.test.ts`
     - **Property 1: Ordenamiento de contenedores**
     - **Validates: Requirements 2.1**
