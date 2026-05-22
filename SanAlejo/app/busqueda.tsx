@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TextInput, Pressable, View } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { ObjetoConContenedor, searchObjetos } from '../src/db/objetoRepository';
+import { Colors, Radii, Shadows, Spacing, Typography } from '../src/theme';
 
 export default function Busqueda() {
   const db = useSQLiteContext();
@@ -31,38 +32,56 @@ export default function Busqueda() {
     <View style={styles.container}>
       <Stack.Screen options={{ title: 'Buscar objetos' }} />
 
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Buscar objetos..."
-        value={query}
-        onChangeText={handleChangeText}
-        autoFocus
-        clearButtonMode="while-editing"
-        returnKeyType="search"
-        accessibilityLabel="Barra de búsqueda de objetos"
-      />
+      {/* Search bar */}
+      <View style={styles.searchWrap}>
+        <Text style={styles.searchIcon}>🔍</Text>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Nombre o descripción del objeto…"
+          placeholderTextColor={Colors.textMuted}
+          value={query}
+          onChangeText={handleChangeText}
+          autoFocus
+          returnKeyType="search"
+          accessibilityLabel="Barra de búsqueda de objetos"
+          selectionColor={Colors.accent}
+        />
+        {query.length > 0 ? (
+          <Pressable onPress={() => handleChangeText('')} hitSlop={8}>
+            <Text style={styles.clearIcon}>✕</Text>
+          </Pressable>
+        ) : null}
+      </View>
 
       <FlatList
         data={resultados}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.resultItem}
+          <Pressable
+            style={({ pressed }) => [styles.resultCard, pressed && styles.resultCardPressed]}
             onPress={() => router.push(`/contenedor/${item.id_contenedor}`)}
             accessibilityRole="button"
             accessibilityLabel={`Ir al contenedor de ${item.nombre}`}
           >
-            <Text style={styles.nombreObjeto}>{item.nombre}</Text>
-            {item.descripcion ? (
-              <Text style={styles.descripcionObjeto}>{item.descripcion}</Text>
-            ) : null}
-            <Text style={styles.nombreContenedor}>{item.nombre_contenedor}</Text>
-          </TouchableOpacity>
+            <View style={styles.resultMain}>
+              <Text style={styles.nombreObjeto} numberOfLines={1}>{item.nombre}</Text>
+              {item.descripcion ? (
+                <Text style={styles.descripcionObjeto} numberOfLines={2}>{item.descripcion}</Text>
+              ) : null}
+            </View>
+            <View style={styles.contenedorBadge}>
+              <Text style={styles.contenedorBadgeText} numberOfLines={1}>
+                📦 {item.nombre_contenedor}
+              </Text>
+            </View>
+          </Pressable>
         )}
         ListEmptyComponent={
           query.trim().length > 0 && !buscando ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
+              <Text style={styles.emptyEmoji}>🔎</Text>
+              <Text style={styles.emptyTitle}>Sin resultados</Text>
+              <Text style={styles.emptySubtitle}>
                 No se encontraron objetos con ese nombre o descripción.
               </Text>
             </View>
@@ -78,22 +97,39 @@ export default function Busqueda() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: Colors.bgBase,
+  },
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bgSurface,
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
+    borderRadius: Radii.lg,
+    paddingHorizontal: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
+    ...Shadows.sm,
+  },
+  searchIcon: {
+    fontSize: 16,
+    marginRight: Spacing.sm,
   },
   searchInput: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    marginVertical: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#D1D1D6',
+    flex: 1,
+    paddingVertical: 13,
+    fontSize: Typography.base,
+    color: Colors.textPrimary,
+  },
+  clearIcon: {
+    fontSize: 14,
+    color: Colors.textMuted,
+    paddingLeft: Spacing.sm,
   },
   list: {
-    paddingVertical: 4,
-    paddingBottom: 32,
+    paddingTop: Spacing.xs,
+    paddingBottom: Spacing.xxxl,
   },
   emptyList: {
     flex: 1,
@@ -102,38 +138,63 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
-    paddingTop: 48,
+    paddingHorizontal: Spacing.xxxl,
+    paddingTop: 60,
+    gap: Spacing.sm,
   },
-  emptyText: {
-    fontSize: 15,
-    color: '#888888',
+  emptyEmoji: {
+    fontSize: 48,
+    marginBottom: Spacing.sm,
+  },
+  emptyTitle: {
+    fontSize: Typography.xl,
+    fontWeight: Typography.bold,
+    color: Colors.textPrimary,
+  },
+  emptySubtitle: {
+    fontSize: Typography.base,
+    color: Colors.textMuted,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: Typography.base * Typography.relaxed,
   },
-  resultItem: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
+  resultCard: {
+    backgroundColor: Colors.bgSurface,
+    marginHorizontal: Spacing.lg,
     marginVertical: 4,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: Radii.lg,
+    padding: Spacing.md,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: Colors.borderSubtle,
+    ...Shadows.sm,
+  },
+  resultCardPressed: {
+    opacity: 0.75,
+    backgroundColor: Colors.bgElevated,
+  },
+  resultMain: {
+    marginBottom: Spacing.sm,
   },
   nombreObjeto: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
-    marginBottom: 2,
+    fontSize: Typography.base,
+    fontWeight: Typography.semibold,
+    color: Colors.textPrimary,
+    marginBottom: 3,
   },
   descripcionObjeto: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginBottom: 4,
+    fontSize: Typography.sm,
+    color: Colors.textSecondary,
+    lineHeight: Typography.sm * Typography.normal,
   },
-  nombreContenedor: {
-    fontSize: 13,
-    color: '#007AFF',
+  contenedorBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.accentMuted,
+    borderRadius: Radii.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 4,
+  },
+  contenedorBadgeText: {
+    fontSize: Typography.xs,
+    color: Colors.accentLight,
+    fontWeight: Typography.medium,
   },
 });

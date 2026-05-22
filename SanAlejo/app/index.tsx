@@ -8,6 +8,7 @@ import { deleteImagesFromStorage } from '../src/utils/imageStorage';
 import { ContenedorItem } from '../src/components/ContenedorItem';
 import { ConfirmDialog } from '../src/components/ConfirmDialog';
 import { FAB } from '../src/components/FAB';
+import { Colors, Spacing, Typography, Radii } from '../src/theme';
 
 export default function ListaContenedores() {
   const db = useSQLiteContext();
@@ -26,26 +27,15 @@ export default function ListaContenedores() {
     }
   }
 
-  useEffect(() => {
-    cargarContenedores();
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      cargarContenedores();
-    }, [db])
-  );
+  useEffect(() => { cargarContenedores(); }, []);
+  useFocusEffect(useCallback(() => { cargarContenedores(); }, [db]));
 
   async function handleConfirmarEliminar() {
     if (contenedorAEliminar === null) return;
     try {
       const uris = await getObjetosFotoUriByContenedor(db, contenedorAEliminar.id);
       if (uris.length > 0) {
-        try {
-          await deleteImagesFromStorage(uris);
-        } catch {
-          // Silencioso: continuar aunque falle la limpieza de archivos
-        }
+        try { await deleteImagesFromStorage(uris); } catch { /* silencioso */ }
       }
       await deleteContenedor(db, contenedorAEliminar.id);
       setContenedorAEliminar(null);
@@ -60,29 +50,23 @@ export default function ListaContenedores() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: 'Mis Contenedores',
+          title: 'San Alejo',
           headerRight: () => (
             <Pressable
               onPress={() => router.push('/busqueda')}
-              style={styles.headerButton}
+              style={styles.searchBtn}
               accessibilityRole="button"
               accessibilityLabel="Buscar objetos"
             >
-              <Text style={styles.headerButtonText}>🔍</Text>
+              <Text style={styles.searchIcon}>🔍</Text>
             </Pressable>
           ),
         }}
       />
 
-      {error ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      ) : null}
-
-      {deleteError ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{deleteError}</Text>
+      {(error || deleteError) ? (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorText}>{error ?? deleteError}</Text>
         </View>
       ) : null}
 
@@ -96,10 +80,19 @@ export default function ListaContenedores() {
             onDelete={() => setContenedorAEliminar(item)}
           />
         )}
+        ListHeaderComponent={
+          contenedores.length > 0 ? (
+            <Text style={styles.sectionLabel}>
+              {contenedores.length} contenedor{contenedores.length !== 1 ? 'es' : ''}
+            </Text>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              No hay contenedores. Agrega tu primera caja, maleta o cajón.
+            <Text style={styles.emptyEmoji}>📦</Text>
+            <Text style={styles.emptyTitle}>Sin contenedores</Text>
+            <Text style={styles.emptySubtitle}>
+              Agrega tu primera caja, maleta o cajón.
             </Text>
           </View>
         }
@@ -121,42 +114,67 @@ export default function ListaContenedores() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: Colors.bgBase,
   },
   list: {
-    paddingVertical: 8,
-    paddingBottom: 88,
+    paddingTop: Spacing.sm,
+    paddingBottom: 100,
   },
   emptyList: {
     flex: 1,
+  },
+  sectionLabel: {
+    fontSize: Typography.xs,
+    fontWeight: Typography.semibold,
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.sm,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: Spacing.xxxl,
+    gap: Spacing.sm,
   },
-  emptyText: {
-    fontSize: 16,
-    color: '#888888',
+  emptyEmoji: {
+    fontSize: 52,
+    marginBottom: Spacing.sm,
+  },
+  emptyTitle: {
+    fontSize: Typography.xl,
+    fontWeight: Typography.bold,
+    color: Colors.textPrimary,
     textAlign: 'center',
-    lineHeight: 24,
   },
-  errorContainer: {
-    backgroundColor: '#FFE5E5',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+  emptySubtitle: {
+    fontSize: Typography.base,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    lineHeight: Typography.base * Typography.relaxed,
+  },
+  errorBanner: {
+    backgroundColor: Colors.dangerMuted,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.danger,
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radii.sm,
   },
   errorText: {
-    color: '#CC0000',
-    fontSize: 14,
-    textAlign: 'center',
+    color: Colors.danger,
+    fontSize: Typography.sm,
   },
-  headerButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  searchBtn: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
   },
-  headerButtonText: {
+  searchIcon: {
     fontSize: 20,
   },
 });

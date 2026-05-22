@@ -10,7 +10,8 @@ export interface ValidationResult {
 export function validateFields(
   fields: Record<string, string>
 ): ValidationResult {
-  const errors: Record<string, string> = {};
+  // Use a null-prototype object so prototype keys like __proto__ are safe
+  const errors: Record<string, string> = Object.create(null);
 
   for (const [key, value] of Object.entries(fields)) {
     if (value.trim().length === 0) {

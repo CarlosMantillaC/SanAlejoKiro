@@ -3,17 +3,18 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { getContenedorById, updateContenedor } from '../../../src/db/contenedorRepository';
 import { validateFields } from '../../../src/utils/validator';
+import { Colors, Radii, Spacing, Typography } from '../../../src/theme';
 
 export default function EditarContenedor() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,45 +28,36 @@ export default function EditarContenedor() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  function clearError(key: string) {
+    if (errors[key]) {
+      setErrors((prev) => { const n = { ...prev }; delete n[key]; return n; });
+    }
+  }
+
   useEffect(() => {
-    async function cargarContenedor() {
+    async function cargar() {
       try {
-        const contenedor = await getContenedorById(db, Number(id));
-        if (contenedor) {
-          setNombre(contenedor.nombre);
-          setDescripcion(contenedor.descripcion);
-          setUbicacion(contenedor.ubicacion);
-        }
-      } catch (e) {
+        const c = await getContenedorById(db, Number(id));
+        if (c) { setNombre(c.nombre); setDescripcion(c.descripcion); setUbicacion(c.ubicacion); }
+      } catch {
         setDbError('No se pudo cargar el contenedor.');
       } finally {
         setLoading(false);
       }
     }
-
-    cargarContenedor();
+    cargar();
   }, [id]);
 
   async function handleGuardar() {
-    const { valid, errors: validationErrors } = validateFields({
-      nombre,
-      descripcion,
-      ubicacion,
-    });
-
-    if (!valid) {
-      setErrors(validationErrors);
-      return;
-    }
-
+    const { valid, errors: ve } = validateFields({ nombre, descripcion, ubicacion });
+    if (!valid) { setErrors(ve); return; }
     setErrors({});
     setSaving(true);
     setDbError(null);
-
     try {
       await updateContenedor(db, Number(id), { nombre, descripcion, ubicacion });
       router.back();
-    } catch (e) {
+    } catch {
       setDbError('No se pudo guardar el contenedor.');
     } finally {
       setSaving(false);
@@ -76,123 +68,144 @@ export default function EditarContenedor() {
     return (
       <View style={styles.centered}>
         <Stack.Screen options={{ title: 'Editar Contenedor' }} />
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={Colors.accent} />
       </View>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <Stack.Screen options={{ title: 'Editar Contenedor' }} />
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.label}>Nombre</Text>
-        <TextInput
-          style={[styles.input, errors.nombre ? styles.inputError : null]}
-          value={nombre}
-          onChangeText={setNombre}
-          placeholder="Nombre del contenedor"
-          accessibilityLabel="Nombre del contenedor"
-        />
-        {errors.nombre ? <Text style={styles.errorText}>{errors.nombre}</Text> : null}
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
-        <Text style={styles.label}>Descripción</Text>
-        <TextInput
-          style={[styles.input, errors.descripcion ? styles.inputError : null]}
-          value={descripcion}
-          onChangeText={setDescripcion}
-          placeholder="Descripción del contenedor"
-          accessibilityLabel="Descripción del contenedor"
-          multiline
-        />
-        {errors.descripcion ? <Text style={styles.errorText}>{errors.descripcion}</Text> : null}
+        {dbError ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerText}>⚠️  {dbError}</Text>
+          </View>
+        ) : null}
 
-        <Text style={styles.label}>Ubicación</Text>
-        <TextInput
-          style={[styles.input, errors.ubicacion ? styles.inputError : null]}
-          value={ubicacion}
-          onChangeText={setUbicacion}
-          placeholder="Ubicación del contenedor"
-          accessibilityLabel="Ubicación del contenedor"
-        />
-        {errors.ubicacion ? <Text style={styles.errorText}>{errors.ubicacion}</Text> : null}
+        <View style={styles.card}>
+          <View style={styles.field}>
+            <Text style={styles.label}>Nombre</Text>
+            <TextInput
+              style={[styles.input, errors.nombre ? styles.inputError : null]}
+              value={nombre}
+              onChangeText={(t) => { setNombre(t); clearError('nombre'); }}
+              placeholder="Nombre del contenedor"
+              placeholderTextColor={Colors.textMuted}
+              selectionColor={Colors.accent}
+              accessibilityLabel="Nombre del contenedor"
+            />
+            {errors.nombre ? <Text style={styles.fieldError}>{errors.nombre}</Text> : null}
+          </View>
 
-        {dbError ? <Text style={styles.dbErrorText}>{dbError}</Text> : null}
+          <View style={styles.divider} />
 
-        <TouchableOpacity
-          style={[styles.button, saving ? styles.buttonDisabled : null]}
+          <View style={styles.field}>
+            <Text style={styles.label}>Descripción</Text>
+            <TextInput
+              style={[styles.input, styles.inputMultiline, errors.descripcion ? styles.inputError : null]}
+              value={descripcion}
+              onChangeText={(t) => { setDescripcion(t); clearError('descripcion'); }}
+              placeholder="Descripción del contenedor"
+              placeholderTextColor={Colors.textMuted}
+              selectionColor={Colors.accent}
+              multiline
+              accessibilityLabel="Descripción del contenedor"
+            />
+            {errors.descripcion ? <Text style={styles.fieldError}>{errors.descripcion}</Text> : null}
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Ubicación</Text>
+            <TextInput
+              style={[styles.input, errors.ubicacion ? styles.inputError : null]}
+              value={ubicacion}
+              onChangeText={(t) => { setUbicacion(t); clearError('ubicacion'); }}
+              placeholder="Ubicación del contenedor"
+              placeholderTextColor={Colors.textMuted}
+              selectionColor={Colors.accent}
+              accessibilityLabel="Ubicación del contenedor"
+            />
+            {errors.ubicacion ? <Text style={styles.fieldError}>{errors.ubicacion}</Text> : null}
+          </View>
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [styles.saveBtn, saving && styles.saveBtnDisabled, pressed && styles.saveBtnPressed]}
           onPress={handleGuardar}
           disabled={saving}
           accessibilityRole="button"
           accessibilityLabel="Guardar contenedor"
         >
-          {saving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Guardar</Text>
-          )}
-        </TouchableOpacity>
+          {saving
+            ? <ActivityIndicator color={Colors.textOnAccent} />
+            : <Text style={styles.saveBtnText}>Guardar cambios</Text>
+          }
+        </Pressable>
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
+  flex: { flex: 1, backgroundColor: Colors.bgBase },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.bgBase },
+  scroll: { padding: Spacing.lg, paddingBottom: 48 },
+  errorBanner: {
+    backgroundColor: Colors.dangerMuted,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.danger,
+    borderRadius: Radii.sm,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
   },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  errorBannerText: { color: Colors.danger, fontSize: Typography.sm },
+  card: {
+    backgroundColor: Colors.bgSurface,
+    borderRadius: Radii.lg,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
+    marginBottom: Spacing.xl,
+    overflow: 'hidden',
   },
-  container: {
-    padding: 16,
-  },
+  field: { padding: Spacing.md },
+  divider: { height: 1, backgroundColor: Colors.borderSubtle },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
-    color: '#333',
+    fontSize: Typography.xs,
+    fontWeight: Typography.semibold,
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: Spacing.sm,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 16,
-    marginBottom: 4,
-    backgroundColor: '#fff',
+    fontSize: Typography.base,
+    color: Colors.textPrimary,
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.bgMuted,
   },
-  inputError: {
-    borderColor: '#e53e3e',
+  inputMultiline: {
+    minHeight: 72,
+    textAlignVertical: 'top',
   },
-  errorText: {
-    color: '#e53e3e',
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  dbErrorText: {
-    color: '#e53e3e',
-    fontSize: 14,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  button: {
-    backgroundColor: '#2b6cb0',
-    borderRadius: 8,
-    padding: 14,
+  inputError: { borderBottomColor: Colors.danger },
+  fieldError: { color: Colors.danger, fontSize: Typography.xs, marginTop: Spacing.xs },
+  saveBtn: {
+    backgroundColor: Colors.accent,
+    borderRadius: Radii.lg,
+    paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 16,
   },
-  buttonDisabled: {
-    backgroundColor: '#90cdf4',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  saveBtnDisabled: { backgroundColor: Colors.bgMuted },
+  saveBtnPressed: { backgroundColor: Colors.accentDark },
+  saveBtnText: {
+    color: Colors.textOnAccent,
+    fontSize: Typography.base,
+    fontWeight: Typography.semibold,
   },
 });

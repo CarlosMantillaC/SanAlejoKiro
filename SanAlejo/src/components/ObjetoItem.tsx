@@ -1,12 +1,7 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  Image,
-  Pressable,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Objeto } from '../db/objetoRepository';
+import { Colors, Radii, Spacing, Typography } from '../theme';
 
 interface ObjetoItemProps {
   objeto: Objeto;
@@ -17,38 +12,41 @@ interface ObjetoItemProps {
 export function ObjetoItem({ objeto, onEdit, onDelete }: ObjetoItemProps) {
   return (
     <View style={styles.container}>
-      {/* Foto a la izquierda */}
       {objeto.foto_uri !== null ? (
         <Image
           source={{ uri: objeto.foto_uri }}
           style={styles.foto}
           accessibilityLabel={`Foto de ${objeto.nombre}`}
         />
-      ) : null}
+      ) : (
+        <View style={styles.fotoPlaceholder}>
+          <Text style={styles.fotoPlaceholderIcon}>📦</Text>
+        </View>
+      )}
 
-      {/* Texto en el centro */}
       <View style={styles.textContainer}>
-        <Text style={styles.nombre}>{objeto.nombre}</Text>
-        <Text style={styles.descripcion}>{objeto.descripcion}</Text>
+        <Text style={styles.nombre} numberOfLines={1}>{objeto.nombre}</Text>
+        {objeto.descripcion ? (
+          <Text style={styles.descripcion} numberOfLines={2}>{objeto.descripcion}</Text>
+        ) : null}
       </View>
 
-      {/* Botones a la derecha */}
-      <View style={styles.buttonContainer}>
+      <View style={styles.actions}>
         <Pressable
-          style={styles.editButton}
+          style={({ pressed }) => [styles.editBtn, pressed && styles.editBtnPressed]}
           onPress={onEdit}
           accessibilityRole="button"
           accessibilityLabel={`Editar ${objeto.nombre}`}
         >
-          <Text style={styles.editText}>Editar</Text>
+          <Text style={styles.editBtnText}>Editar</Text>
         </Pressable>
         <Pressable
-          style={styles.deleteButton}
+          style={({ pressed }) => [styles.deleteBtn, pressed && styles.deleteBtnPressed]}
           onPress={onDelete}
           accessibilityRole="button"
           accessibilityLabel={`Eliminar ${objeto.nombre}`}
         >
-          <Text style={styles.deleteText}>Eliminar</Text>
+          <Text style={styles.deleteBtnText}>Eliminar</Text>
         </Pressable>
       </View>
     </View>
@@ -59,59 +57,76 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    backgroundColor: Colors.bgSurface,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    borderBottomColor: Colors.borderSubtle,
   },
   foto: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    marginRight: 12,
+    width: 52,
+    height: 52,
+    borderRadius: Radii.md,
+    marginRight: Spacing.md,
+  },
+  fotoPlaceholder: {
+    width: 52,
+    height: 52,
+    borderRadius: Radii.md,
+    backgroundColor: Colors.bgMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.md,
+  },
+  fotoPlaceholderIcon: {
+    fontSize: 22,
   },
   textContainer: {
     flex: 1,
-    marginRight: 8,
+    marginRight: Spacing.sm,
   },
   nombre: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 4,
+    fontSize: Typography.base,
+    fontWeight: Typography.semibold,
+    color: Colors.textPrimary,
+    marginBottom: 3,
   },
   descripcion: {
-    fontSize: 13,
-    color: '#888888',
+    fontSize: Typography.sm,
+    color: Colors.textSecondary,
+    lineHeight: Typography.sm * Typography.normal,
   },
-  buttonContainer: {
-    flexDirection: 'column',
+  actions: {
+    gap: Spacing.xs,
     alignItems: 'flex-end',
   },
-  editButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+  editBtn: {
+    paddingVertical: 5,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radii.sm,
     borderWidth: 1,
-    borderColor: '#CCCCCC',
-    alignItems: 'center',
-    marginBottom: 6,
+    borderColor: Colors.accent,
   },
-  editText: {
-    fontSize: 13,
-    color: '#333333',
+  editBtnPressed: {
+    backgroundColor: Colors.accentMuted,
   },
-  deleteButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    backgroundColor: '#FF3B30',
-    alignItems: 'center',
+  editBtnText: {
+    fontSize: Typography.sm,
+    color: Colors.accentLight,
+    fontWeight: Typography.medium,
   },
-  deleteText: {
-    fontSize: 13,
-    color: '#FFFFFF',
-    fontWeight: '600',
+  deleteBtn: {
+    paddingVertical: 5,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radii.sm,
+    backgroundColor: Colors.dangerMuted,
+  },
+  deleteBtnPressed: {
+    backgroundColor: Colors.danger,
+  },
+  deleteBtnText: {
+    fontSize: Typography.sm,
+    color: Colors.danger,
+    fontWeight: Typography.medium,
   },
 });

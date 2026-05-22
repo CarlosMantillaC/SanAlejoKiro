@@ -1,11 +1,6 @@
 import React from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-} from 'react-native';
+import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
+import { Colors, Radii, Shadows, Spacing, Typography } from '../theme';
 
 interface ConfirmDialogProps {
   visible: boolean;
@@ -14,25 +9,27 @@ interface ConfirmDialogProps {
   onCancel: () => void;
 }
 
-export function ConfirmDialog({
-  visible,
-  message,
-  onConfirm,
-  onCancel,
-}: ConfirmDialogProps) {
+export function ConfirmDialog({ visible, message, onConfirm, onCancel }: ConfirmDialogProps) {
   return (
     <Modal
       visible={visible}
-      transparent={true}
+      transparent
       animationType="fade"
       onRequestClose={onCancel}
     >
-      <View style={styles.overlay}>
-        <View style={styles.container}>
+      <Pressable style={styles.overlay} onPress={onCancel}>
+        <Pressable style={styles.card} onPress={() => {}}>
+          {/* Icon */}
+          <View style={styles.iconWrap}>
+            <Text style={styles.icon}>⚠️</Text>
+          </View>
+
           <Text style={styles.message}>{message}</Text>
+          <Text style={styles.subtext}>Esta acción no se puede deshacer.</Text>
+
           <View style={styles.buttonRow}>
             <Pressable
-              style={styles.cancelButton}
+              style={({ pressed }) => [styles.cancelBtn, pressed && styles.cancelBtnPressed]}
               onPress={onCancel}
               accessibilityRole="button"
               accessibilityLabel="Cancelar"
@@ -40,7 +37,7 @@ export function ConfirmDialog({
               <Text style={styles.cancelText}>Cancelar</Text>
             </Pressable>
             <Pressable
-              style={styles.deleteButton}
+              style={({ pressed }) => [styles.deleteBtn, pressed && styles.deleteBtnPressed]}
               onPress={onConfirm}
               accessibilityRole="button"
               accessibilityLabel="Eliminar"
@@ -48,8 +45,8 @@ export function ConfirmDialog({
               <Text style={styles.deleteText}>Eliminar</Text>
             </Pressable>
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
@@ -57,52 +54,80 @@ export function ConfirmDialog({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: Colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: Spacing.xxxl,
   },
-  container: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 24,
-    marginHorizontal: 32,
-    width: '80%',
+  card: {
+    backgroundColor: Colors.bgElevated,
+    borderRadius: Radii.xl,
+    padding: Spacing.xxl,
+    width: '100%',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
+    ...Shadows.md,
+  },
+  iconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.dangerMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.lg,
+  },
+  icon: {
+    fontSize: 26,
   },
   message: {
-    fontSize: 16,
-    color: '#333333',
+    fontSize: Typography.md,
+    fontWeight: Typography.semibold,
+    color: Colors.textPrimary,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: Spacing.sm,
+  },
+  subtext: {
+    fontSize: Typography.sm,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    marginBottom: Spacing.xxl,
   },
   buttonRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: Spacing.md,
+    width: '100%',
   },
-  cancelButton: {
+  cancelBtn: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: 13,
+    borderRadius: Radii.md,
     borderWidth: 1,
-    borderColor: '#CCCCCC',
+    borderColor: Colors.bgMuted,
     alignItems: 'center',
-    marginRight: 6,
+  },
+  cancelBtnPressed: {
+    backgroundColor: Colors.bgMuted,
   },
   cancelText: {
-    fontSize: 16,
-    color: '#333333',
+    fontSize: Typography.base,
+    color: Colors.textSecondary,
+    fontWeight: Typography.medium,
   },
-  deleteButton: {
+  deleteBtn: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: '#FF3B30',
+    paddingVertical: 13,
+    borderRadius: Radii.md,
+    backgroundColor: Colors.danger,
     alignItems: 'center',
   },
+  deleteBtnPressed: {
+    backgroundColor: Colors.dangerDark,
+  },
   deleteText: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: '600',
+    fontSize: Typography.base,
+    color: Colors.textOnDanger,
+    fontWeight: Typography.semibold,
   },
 });

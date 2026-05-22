@@ -3,11 +3,11 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
@@ -16,6 +16,7 @@ import { insertObjeto } from '../../../src/db/objetoRepository';
 import { copyImageToStorage } from '../../../src/utils/imageStorage';
 import { validateFields } from '../../../src/utils/validator';
 import { ImagePickerButton } from '../../../src/components/ImagePickerButton';
+import { Colors, Radii, Spacing, Typography } from '../../../src/theme';
 
 export default function NuevoObjeto() {
   const { id_contenedor } = useLocalSearchParams<{ id_contenedor: string }>();
@@ -28,43 +29,33 @@ export default function NuevoObjeto() {
   const [dbError, setDbError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  function clearError(key: string) {
+    if (errors[key]) {
+      setErrors((prev) => { const n = { ...prev }; delete n[key]; return n; });
+    }
+  }
+
   async function handleImageSelected(uri: string) {
     try {
-      const storedUri = await copyImageToStorage(uri);
-      setFotoUri(storedUri);
+      const stored = await copyImageToStorage(uri);
+      setFotoUri(stored);
     } catch {
       setDbError('No se pudo procesar la foto. El objeto se guardará sin imagen.');
     }
   }
 
   function handlePermissionDenied() {
-    setDbError(
-      'Debes conceder permiso de acceso a la galería o cámara en la configuración del dispositivo.'
-    );
+    setDbError('Debes conceder permiso de acceso a la galería o cámara en la configuración del dispositivo.');
   }
 
   async function handleGuardar() {
-    const { valid, errors: validationErrors } = validateFields({
-      nombre,
-      descripcion,
-    });
-
-    if (!valid) {
-      setErrors(validationErrors);
-      return;
-    }
-
+    const { valid, errors: ve } = validateFields({ nombre, descripcion });
+    if (!valid) { setErrors(ve); return; }
     setErrors({});
     setSaving(true);
     setDbError(null);
-
     try {
-      await insertObjeto(db, {
-        nombre,
-        descripcion,
-        id_contenedor: Number(id_contenedor),
-        foto_uri: fotoUri,
-      });
+      await insertObjeto(db, { nombre, descripcion, id_contenedor: Number(id_contenedor), foto_uri: fotoUri });
       router.back();
     } catch {
       setDbError('No se pudo guardar el objeto.');
@@ -74,160 +65,134 @@ export default function NuevoObjeto() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <Stack.Screen options={{ title: 'Nuevo Objeto' }} />
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
         {dbError ? (
-          <View style={styles.dbErrorContainer}>
-            <Text style={styles.dbErrorText}>{dbError}</Text>
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerText}>⚠️  {dbError}</Text>
           </View>
         ) : null}
 
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Nombre</Text>
-          <TextInput
-            style={[styles.input, errors.nombre ? styles.inputError : null]}
-            value={nombre}
-            onChangeText={(text) => {
-              setNombre(text);
-              if (errors.nombre) {
-                setErrors((prev) => {
-                  const next = { ...prev };
-                  delete next.nombre;
-                  return next;
-                });
-              }
-            }}
-            placeholder="Ej. Destornillador Phillips"
-            placeholderTextColor="#AAAAAA"
-            accessibilityLabel="Nombre del objeto"
-          />
-          {errors.nombre ? (
-            <Text style={styles.fieldError}>{errors.nombre}</Text>
-          ) : null}
+        <View style={styles.card}>
+          <View style={styles.field}>
+            <Text style={styles.label}>Nombre</Text>
+            <TextInput
+              style={[styles.input, errors.nombre ? styles.inputError : null]}
+              value={nombre}
+              onChangeText={(t) => { setNombre(t); clearError('nombre'); }}
+              placeholder="Ej. Destornillador Phillips"
+              placeholderTextColor={Colors.textMuted}
+              selectionColor={Colors.accent}
+              accessibilityLabel="Nombre del objeto"
+            />
+            {errors.nombre ? <Text style={styles.fieldError}>{errors.nombre}</Text> : null}
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Descripción</Text>
+            <TextInput
+              style={[styles.input, styles.inputMultiline, errors.descripcion ? styles.inputError : null]}
+              value={descripcion}
+              onChangeText={(t) => { setDescripcion(t); clearError('descripcion'); }}
+              placeholder="Ej. Destornillador de cabeza Phillips #2"
+              placeholderTextColor={Colors.textMuted}
+              selectionColor={Colors.accent}
+              multiline
+              numberOfLines={3}
+              accessibilityLabel="Descripción del objeto"
+            />
+            {errors.descripcion ? <Text style={styles.fieldError}>{errors.descripcion}</Text> : null}
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Foto (opcional)</Text>
+            <ImagePickerButton
+              currentUri={fotoUri}
+              onImageSelected={handleImageSelected}
+              onPermissionDenied={handlePermissionDenied}
+            />
+          </View>
         </View>
 
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Descripción</Text>
-          <TextInput
-            style={[styles.input, errors.descripcion ? styles.inputError : null]}
-            value={descripcion}
-            onChangeText={(text) => {
-              setDescripcion(text);
-              if (errors.descripcion) {
-                setErrors((prev) => {
-                  const next = { ...prev };
-                  delete next.descripcion;
-                  return next;
-                });
-              }
-            }}
-            placeholder="Ej. Destornillador de cabeza Phillips #2"
-            placeholderTextColor="#AAAAAA"
-            multiline
-            numberOfLines={3}
-            accessibilityLabel="Descripción del objeto"
-          />
-          {errors.descripcion ? (
-            <Text style={styles.fieldError}>{errors.descripcion}</Text>
-          ) : null}
-        </View>
-
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Foto</Text>
-          <ImagePickerButton
-            currentUri={fotoUri}
-            onImageSelected={handleImageSelected}
-            onPermissionDenied={handlePermissionDenied}
-          />
-        </View>
-
-        <TouchableOpacity
-          style={[styles.button, saving ? styles.buttonDisabled : null]}
+        <Pressable
+          style={({ pressed }) => [styles.saveBtn, saving && styles.saveBtnDisabled, pressed && styles.saveBtnPressed]}
           onPress={handleGuardar}
           disabled={saving}
           accessibilityRole="button"
           accessibilityLabel="Guardar objeto"
           accessibilityState={{ disabled: saving }}
         >
-          {saving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Guardar</Text>
-          )}
-        </TouchableOpacity>
+          {saving
+            ? <ActivityIndicator color={Colors.textOnAccent} />
+            : <Text style={styles.saveBtnText}>Guardar</Text>
+          }
+        </Pressable>
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-    backgroundColor: '#F2F2F7',
+  flex: { flex: 1, backgroundColor: Colors.bgBase },
+  scroll: { padding: Spacing.lg, paddingBottom: 48 },
+  errorBanner: {
+    backgroundColor: Colors.dangerMuted,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.danger,
+    borderRadius: Radii.sm,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
   },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+  errorBannerText: { color: Colors.danger, fontSize: Typography.sm },
+  card: {
+    backgroundColor: Colors.bgSurface,
+    borderRadius: Radii.lg,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
+    marginBottom: Spacing.xl,
+    overflow: 'hidden',
   },
-  dbErrorContainer: {
-    backgroundColor: '#FFE5E5',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  dbErrorText: {
-    color: '#CC0000',
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  fieldContainer: {
-    marginBottom: 16,
-  },
+  field: { padding: Spacing.md },
+  divider: { height: 1, backgroundColor: Colors.borderSubtle },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333333',
-    marginBottom: 6,
+    fontSize: Typography.xs,
+    fontWeight: Typography.semibold,
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: Spacing.sm,
   },
   input: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CCCCCC',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: '#111111',
+    fontSize: Typography.base,
+    color: Colors.textPrimary,
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.bgMuted,
   },
-  inputError: {
-    borderColor: '#CC0000',
+  inputMultiline: {
+    minHeight: 72,
+    textAlignVertical: 'top',
   },
-  fieldError: {
-    color: '#CC0000',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 10,
-    paddingVertical: 14,
+  inputError: { borderBottomColor: Colors.danger },
+  fieldError: { color: Colors.danger, fontSize: Typography.xs, marginTop: Spacing.xs },
+  saveBtn: {
+    backgroundColor: Colors.accent,
+    borderRadius: Radii.lg,
+    paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 8,
   },
-  buttonDisabled: {
-    backgroundColor: '#A0C4FF',
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+  saveBtnDisabled: { backgroundColor: Colors.bgMuted },
+  saveBtnPressed: { backgroundColor: Colors.accentDark },
+  saveBtnText: {
+    color: Colors.textOnAccent,
+    fontSize: Typography.base,
+    fontWeight: Typography.semibold,
   },
 });
