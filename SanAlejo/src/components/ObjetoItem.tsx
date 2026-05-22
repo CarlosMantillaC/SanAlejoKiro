@@ -9,9 +9,10 @@ interface ObjetoItemProps {
   objeto: Objeto;
   onEdit: () => void;
   onDelete: () => void;
+  onPressFoto?: () => void;
 }
 
-export function ObjetoItem({ objeto, onEdit, onDelete }: ObjetoItemProps) {
+export function ObjetoItem({ objeto, onEdit, onDelete, onPressFoto }: ObjetoItemProps) {
   const { colors } = useTheme();
 
   return (
@@ -22,11 +23,26 @@ export function ObjetoItem({ objeto, onEdit, onDelete }: ObjetoItemProps) {
       ]}
     >
       {objeto.foto_uri !== null ? (
-        <Image
-          source={{ uri: objeto.foto_uri }}
-          style={styles.foto}
-          accessibilityLabel={`Foto de ${objeto.nombre}`}
-        />
+        onPressFoto ? (
+          <Pressable
+            onPress={onPressFoto}
+            accessibilityRole="button"
+            accessibilityLabel={`Ver foto de ${objeto.nombre}`}
+            style={({ pressed }) => [pressed && styles.fotoPressed]}
+          >
+            <Image
+              source={{ uri: objeto.foto_uri }}
+              style={styles.foto}
+              accessibilityLabel={`Foto de ${objeto.nombre}`}
+            />
+          </Pressable>
+        ) : (
+          <Image
+            source={{ uri: objeto.foto_uri }}
+            style={styles.foto}
+            accessibilityLabel={`Foto de ${objeto.nombre}`}
+          />
+        )
       ) : (
         <View style={[styles.fotoPlaceholder, { backgroundColor: colors.bgMuted }]}>
           <Ionicons name="cube-outline" size={24} color={colors.textMuted} />
@@ -86,6 +102,9 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: Radii.md,
     marginRight: Spacing.md,
+  },
+  fotoPressed: {
+    opacity: 0.85,
   },
   fotoPlaceholder: {
     width: 52,

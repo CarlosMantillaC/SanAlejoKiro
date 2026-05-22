@@ -29,19 +29,19 @@ Implementación incremental de un visor de imagen reutilizable a pantalla comple
 		- No mutar el estado de la pantalla base al cerrar
 		- _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 2. Integrar el visor en la pantalla de detalle de contenedor
-	- [ ] 2.1 Actualizar `src/components/ObjetoItem.tsx`
+- [x] 2. Integrar el visor en la pantalla de detalle de contenedor
+	- [x] 2.1 Actualizar `src/components/ObjetoItem.tsx`
 		- Hacer que la foto sea tocable solo cuando `objeto.foto_uri` no sea `null`
 		- Mantener el placeholder sin comportamiento de apertura cuando no hay foto
 		- _Requirements: 1.1, 1.4_
 
-	- [ ] 2.2 Actualizar `app/contenedor/[id].tsx`
+	- [x] 2.2 Actualizar `app/contenedor/[id].tsx`
 		- Agregar estado local para controlar `ImageViewer`
 		- Abrir el visor al tocar la foto de un objeto con `foto_uri`
 		- Cerrar el visor sin alterar la lista ni la posición de la pantalla
 		- _Requirements: 1.1, 3.1, 3.4_
 
-	- [ ] 2.3 Mantener coherencia visual con el detalle
+	- [x] 2.3 Mantener coherencia visual con el detalle
 		- Reutilizar el tema activo y los tokens ya existentes
 		- Confirmar que el overlay del visor no rompe el layout del detalle
 		- _Requirements: 2.2, 2.4, 6.1, 6.2, 6.3, 6.4_

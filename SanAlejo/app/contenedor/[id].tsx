@@ -13,6 +13,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { Contenedor, getContenedorById } from '../../src/db/contenedorRepository';
 import { Objeto, getObjetosByContenedor, deleteObjeto } from '../../src/db/objetoRepository';
 import { ObjetoItem } from '../../src/components/ObjetoItem';
+import { ImageViewer } from '../../src/components/ImageViewer';
 import { ConfirmDialog } from '../../src/components/ConfirmDialog';
 import { deleteImageFromStorage } from '../../src/utils/imageStorage';
 import { Radii, Shadows, Spacing, Typography } from '../../src/theme';
@@ -29,6 +30,7 @@ export default function DetalleContenedor() {
   const [error, setError] = useState<string | null>(null);
   const [objetoAEliminar, setObjetoAEliminar] = useState<Objeto | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [imagenVisorUri, setImagenVisorUri] = useState<string | null>(null);
 
   async function cargarDatos() {
     try {
@@ -134,6 +136,7 @@ export default function DetalleContenedor() {
                 objeto={item}
                 onEdit={() => router.push(`/contenedor/objeto/editar/${item.id}`)}
                 onDelete={() => setObjetoAEliminar(item)}
+                onPressFoto={item.foto_uri !== null ? () => setImagenVisorUri(item.foto_uri) : undefined}
               />
             )}
             ListEmptyComponent={
@@ -146,6 +149,12 @@ export default function DetalleContenedor() {
               </View>
             }
             contentContainerStyle={objetos.length === 0 ? styles.emptyList : styles.list}
+          />
+
+          <ImageViewer
+            uri={imagenVisorUri ?? ''}
+            visible={imagenVisorUri !== null}
+            onClose={() => setImagenVisorUri(null)}
           />
 
           <Pressable
