@@ -1,7 +1,8 @@
 import * as ImagePicker from 'expo-image-picker';
 import { Image, Pressable, Text, View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Radii, Spacing, Typography } from '../theme';
+import { Radii, Spacing, Typography } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 
 interface ImagePickerButtonProps {
   currentUri: string | null;
@@ -10,6 +11,8 @@ interface ImagePickerButtonProps {
 }
 
 export function ImagePickerButton({ currentUri, onImageSelected, onPermissionDenied }: ImagePickerButtonProps) {
+  const { colors } = useTheme();
+
   async function handleCamera() {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') { onPermissionDenied(); return; }
@@ -37,34 +40,49 @@ export function ImagePickerButton({ currentUri, onImageSelected, onPermissionDen
       {currentUri ? (
         <Image
           source={{ uri: currentUri }}
-          style={styles.preview}
+          style={[styles.preview, { borderColor: colors.borderSubtle }]}
           accessibilityLabel="Vista previa de la foto del objeto"
         />
       ) : (
-        <View style={styles.placeholder}>
-          <Ionicons name="camera-outline" size={28} color={Colors.textMuted} />
-          <Text style={styles.placeholderText}>Sin foto</Text>
+        <View
+          style={[
+            styles.placeholder,
+            { backgroundColor: colors.bgMuted, borderColor: colors.borderSubtle },
+          ]}
+        >
+          <Ionicons name="camera-outline" size={28} color={colors.textMuted} />
+          <Text style={[styles.placeholderText, { color: colors.textMuted }]}>Sin foto</Text>
         </View>
       )}
 
       <View style={styles.btnRow}>
         <Pressable
-          style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
+          style={({ pressed }) => [
+            styles.btn,
+            { borderColor: colors.accent },
+            pressed && { backgroundColor: colors.accentMuted },
+          ]}
           onPress={handleCamera}
           accessibilityRole="button"
           accessibilityLabel="Tomar foto del objeto"
         >
-          <Ionicons name="camera-outline" size={16} color={Colors.accentLight} />
-          <Text style={styles.btnText}>Cámara</Text>
+          <Ionicons name="camera-outline" size={16} color={colors.accentLight} />
+          <Text style={[styles.btnText, { color: colors.accentLight }]}>Cámara</Text>
         </Pressable>
         <Pressable
-          style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
+          style={({ pressed }) => [
+            styles.btn,
+            { borderColor: colors.accent },
+            pressed && { backgroundColor: colors.accentMuted },
+          ]}
           onPress={handleGallery}
           accessibilityRole="button"
           accessibilityLabel="Seleccionar foto de galería"
         >
-          <Ionicons name="images-outline" size={16} color={Colors.accentLight} />
-          <Text style={styles.btnText}>{currentUri ? 'Cambiar' : 'Galería'}</Text>
+          <Ionicons name="images-outline" size={16} color={colors.accentLight} />
+          <Text style={[styles.btnText, { color: colors.accentLight }]}>
+            {currentUri ? 'Cambiar' : 'Galería'}
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -80,21 +98,18 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: Radii.md,
     borderWidth: 1,
-    borderColor: Colors.borderSubtle,
   },
   placeholder: {
     width: 120,
     height: 120,
     borderRadius: Radii.md,
-    backgroundColor: Colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.xs,
     borderWidth: 1,
-    borderColor: Colors.borderSubtle,
     borderStyle: 'dashed',
   },
-  placeholderText: { fontSize: Typography.xs, color: Colors.textMuted },
+  placeholderText: { fontSize: Typography.xs },
   btnRow: {
     flexDirection: 'row',
     gap: Spacing.sm,
@@ -109,14 +124,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     borderRadius: Radii.md,
     borderWidth: 1,
-    borderColor: Colors.accent,
-  },
-  btnPressed: {
-    backgroundColor: Colors.accentMuted,
   },
   btnText: {
     fontSize: Typography.sm,
-    color: Colors.accentLight,
     fontWeight: Typography.medium,
   },
 });

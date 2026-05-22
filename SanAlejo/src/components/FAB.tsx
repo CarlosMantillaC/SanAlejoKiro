@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
-import { Colors, Shadows } from '../theme';
+import { Shadows } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 
 interface FABProps {
   onPress: () => void;
@@ -7,14 +8,20 @@ interface FABProps {
 }
 
 export function FAB({ onPress, label = '+' }: FABProps) {
+  const { colors } = useTheme();
+
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+      style={({ pressed }) => [
+        styles.fab,
+        { backgroundColor: pressed ? colors.accentDark : colors.accent },
+        pressed && styles.fabPressed,
+      ]}
       accessibilityLabel="Agregar nuevo contenedor"
       accessibilityRole="button"
     >
-      <Text style={styles.icon}>{label}</Text>
+      <Text style={[styles.icon, { color: colors.textOnAccent }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -27,17 +34,14 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 29,
-    backgroundColor: Colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
     ...Shadows.lg,
   },
   fabPressed: {
-    backgroundColor: Colors.accentDark,
     transform: [{ scale: 0.95 }],
   },
   icon: {
-    color: Colors.textOnAccent,
     fontSize: 28,
     lineHeight: 32,
     fontWeight: '300',

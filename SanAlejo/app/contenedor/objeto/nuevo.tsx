@@ -17,11 +17,13 @@ import { insertObjeto } from '../../../src/db/objetoRepository';
 import { copyImageToStorage } from '../../../src/utils/imageStorage';
 import { validateFields } from '../../../src/utils/validator';
 import { ImagePickerButton } from '../../../src/components/ImagePickerButton';
-import { Colors, Radii, Spacing, Typography } from '../../../src/theme';
+import { Radii, Spacing, Typography } from '../../../src/theme';
+import { useTheme } from '../../../src/context/ThemeContext';
 
 export default function NuevoObjeto() {
   const { id_contenedor } = useLocalSearchParams<{ id_contenedor: string }>();
   const db = useSQLiteContext();
+  const { colors } = useTheme();
 
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -66,53 +68,62 @@ export default function NuevoObjeto() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView
+      style={[styles.flex, { backgroundColor: colors.bgBase }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <Stack.Screen options={{ title: 'Nuevo Objeto' }} />
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
         {dbError ? (
-          <View style={styles.errorBanner}>
-            <Ionicons name="warning-outline" size={14} color={Colors.danger} />
-            <Text style={styles.errorBannerText}>{dbError}</Text>
+          <View style={[styles.errorBanner, { backgroundColor: colors.dangerMuted, borderLeftColor: colors.danger }]}>
+            <Ionicons name="warning-outline" size={14} color={colors.danger} />
+            <Text style={[styles.errorBannerText, { color: colors.danger }]}>{dbError}</Text>
           </View>
         ) : null}
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.bgSurface, borderColor: colors.borderSubtle }]}>
           <View style={styles.field}>
-            <Text style={styles.label}>Nombre</Text>
+            <Text style={[styles.label, { color: colors.textMuted }]}>Nombre</Text>
             <TextInput
-              style={[styles.input, errors.nombre ? styles.inputError : null]}
+              style={[
+                styles.input,
+                { color: colors.textPrimary, borderBottomColor: errors.nombre ? colors.danger : colors.bgMuted },
+              ]}
               value={nombre}
               onChangeText={(t) => { setNombre(t); clearError('nombre'); }}
               placeholder="Ej. Destornillador Phillips"
-              placeholderTextColor={Colors.textMuted}
-              selectionColor={Colors.accent}
+              placeholderTextColor={colors.textMuted}
+              selectionColor={colors.accent}
               accessibilityLabel="Nombre del objeto"
             />
-            {errors.nombre ? <Text style={styles.fieldError}>{errors.nombre}</Text> : null}
+            {errors.nombre ? <Text style={[styles.fieldError, { color: colors.danger }]}>{errors.nombre}</Text> : null}
           </View>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.borderSubtle }]} />
 
           <View style={styles.field}>
-            <Text style={styles.label}>Descripción</Text>
+            <Text style={[styles.label, { color: colors.textMuted }]}>Descripción</Text>
             <TextInput
-              style={[styles.input, errors.descripcion ? styles.inputError : null]}
+              style={[
+                styles.input,
+                { color: colors.textPrimary, borderBottomColor: errors.descripcion ? colors.danger : colors.bgMuted },
+              ]}
               value={descripcion}
               onChangeText={(t) => { setDescripcion(t); clearError('descripcion'); }}
               placeholder="Ej. Destornillador de cabeza Phillips #2"
-              placeholderTextColor={Colors.textMuted}
-              selectionColor={Colors.accent}
+              placeholderTextColor={colors.textMuted}
+              selectionColor={colors.accent}
               multiline
               accessibilityLabel="Descripción del objeto"
             />
-            {errors.descripcion ? <Text style={styles.fieldError}>{errors.descripcion}</Text> : null}
+            {errors.descripcion ? <Text style={[styles.fieldError, { color: colors.danger }]}>{errors.descripcion}</Text> : null}
           </View>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.borderSubtle }]} />
 
           <View style={styles.field}>
-            <Text style={styles.label}>Foto (opcional)</Text>
+            <Text style={[styles.label, { color: colors.textMuted }]}>Foto (opcional)</Text>
             <ImagePickerButton
               currentUri={fotoUri}
               onImageSelected={handleImageSelected}
@@ -122,7 +133,10 @@ export default function NuevoObjeto() {
         </View>
 
         <Pressable
-          style={({ pressed }) => [styles.saveBtn, saving && styles.saveBtnDisabled, pressed && styles.saveBtnPressed]}
+          style={({ pressed }) => [
+            styles.saveBtn,
+            { backgroundColor: saving ? colors.bgMuted : pressed ? colors.accentDark : colors.accent },
+          ]}
           onPress={handleGuardar}
           disabled={saving}
           accessibilityRole="button"
@@ -130,8 +144,8 @@ export default function NuevoObjeto() {
           accessibilityState={{ disabled: saving }}
         >
           {saving
-            ? <ActivityIndicator color={Colors.textOnAccent} />
-            : <Text style={styles.saveBtnText}>Guardar</Text>
+            ? <ActivityIndicator color={colors.textOnAccent} />
+            : <Text style={[styles.saveBtnText, { color: colors.textOnAccent }]}>Guardar</Text>
           }
         </Pressable>
 
@@ -141,61 +155,45 @@ export default function NuevoObjeto() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: Colors.bgBase },
+  flex: { flex: 1 },
   scroll: { padding: Spacing.lg, paddingBottom: 48 },
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    backgroundColor: Colors.dangerMuted,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.danger,
     borderRadius: Radii.sm,
     padding: Spacing.md,
     marginBottom: Spacing.lg,
   },
-  errorBannerText: { color: Colors.danger, fontSize: Typography.sm },
+  errorBannerText: { fontSize: Typography.sm },
   card: {
-    backgroundColor: Colors.bgSurface,
     borderRadius: Radii.lg,
     borderWidth: 1,
-    borderColor: Colors.borderSubtle,
     marginBottom: Spacing.xl,
     overflow: 'hidden',
   },
   field: { padding: Spacing.md },
-  divider: { height: 1, backgroundColor: Colors.borderSubtle },
+  divider: { height: 1 },
   label: {
     fontSize: Typography.xs,
     fontWeight: Typography.semibold,
-    color: Colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
     marginBottom: Spacing.sm,
   },
   input: {
     fontSize: Typography.base,
-    color: Colors.textPrimary,
     paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.bgMuted,
   },
-  inputMultiline: {
-    minHeight: 72,
-    textAlignVertical: 'top',
-  },
-  inputError: { borderBottomColor: Colors.danger },
-  fieldError: { color: Colors.danger, fontSize: Typography.xs, marginTop: Spacing.xs },
+  fieldError: { fontSize: Typography.xs, marginTop: Spacing.xs },
   saveBtn: {
-    backgroundColor: Colors.accent,
     borderRadius: Radii.lg,
     paddingVertical: 15,
     alignItems: 'center',
   },
-  saveBtnDisabled: { backgroundColor: Colors.bgMuted },
-  saveBtnPressed: { backgroundColor: Colors.accentDark },
   saveBtnText: {
-    color: Colors.textOnAccent,
     fontSize: Typography.base,
     fontWeight: Typography.semibold,
   },

@@ -1,24 +1,47 @@
 import { SQLiteProvider } from 'expo-sqlite';
 import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { Suspense } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { initializeDatabase } from '../src/db/schema';
-import { Colors, Typography } from '../src/theme';
+import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
+import { Typography } from '../src/theme';
 
-export default function RootLayout() {
+function AppNavigator() {
+  const { colors, scheme } = useTheme();
+
   return (
-    <SQLiteProvider databaseName="san-alejo.db" onInit={initializeDatabase}>
+    <>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: Colors.bgSurface },
-          headerTintColor: Colors.textPrimary,
+          headerStyle: { backgroundColor: colors.bgSurface },
+          headerTintColor: colors.textPrimary,
           headerTitleStyle: {
-            color: Colors.textPrimary,
+            color: colors.textPrimary,
             fontWeight: Typography.semibold,
             fontSize: Typography.md,
           },
-          contentStyle: { backgroundColor: Colors.bgBase },
+          contentStyle: { backgroundColor: colors.bgBase },
           headerShadowVisible: false,
         }}
       />
-    </SQLiteProvider>
+    </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <Suspense fallback={<View><ActivityIndicator /></View>}>
+        <SQLiteProvider
+          databaseName="san-alejo.db"
+          onInit={initializeDatabase}
+          useSuspense
+        >
+          <AppNavigator />
+        </SQLiteProvider>
+      </Suspense>
+    </ThemeProvider>
   );
 }

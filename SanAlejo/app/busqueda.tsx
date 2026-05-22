@@ -4,10 +4,12 @@ import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
 import { ObjetoConContenedor, searchObjetos } from '../src/db/objetoRepository';
-import { Colors, Radii, Shadows, Spacing, Typography } from '../src/theme';
+import { Radii, Shadows, Spacing, Typography } from '../src/theme';
+import { useTheme } from '../src/context/ThemeContext';
 
 export default function Busqueda() {
   const db = useSQLiteContext();
+  const { colors } = useTheme();
   const [query, setQuery] = useState('');
   const [resultados, setResultados] = useState<ObjetoConContenedor[]>([]);
   const [buscando, setBuscando] = useState(false);
@@ -30,26 +32,31 @@ export default function Busqueda() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bgBase }]}>
       <Stack.Screen options={{ title: 'Buscar objetos' }} />
 
       {/* Search bar */}
-      <View style={styles.searchWrap}>
-        <Ionicons name="search-outline" size={18} color={Colors.textMuted} style={styles.searchIconStyle} />
+      <View
+        style={[
+          styles.searchWrap,
+          { backgroundColor: colors.bgSurface, borderColor: colors.borderSubtle },
+        ]}
+      >
+        <Ionicons name="search-outline" size={18} color={colors.textMuted} style={styles.searchIconStyle} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: colors.textPrimary }]}
           placeholder="Nombre o descripción del objeto…"
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={colors.textMuted}
           value={query}
           onChangeText={handleChangeText}
           autoFocus
           returnKeyType="search"
           accessibilityLabel="Barra de búsqueda de objetos"
-          selectionColor={Colors.accent}
+          selectionColor={colors.accent}
         />
         {query.length > 0 ? (
           <Pressable onPress={() => handleChangeText('')} hitSlop={8}>
-            <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
+            <Ionicons name="close-circle" size={18} color={colors.textMuted} />
           </Pressable>
         ) : null}
       </View>
@@ -59,20 +66,30 @@ export default function Busqueda() {
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
           <Pressable
-            style={({ pressed }) => [styles.resultCard, pressed && styles.resultCardPressed]}
+            style={({ pressed }) => [
+              styles.resultCard,
+              {
+                backgroundColor: pressed ? colors.bgElevated : colors.bgSurface,
+                borderColor: colors.borderSubtle,
+              },
+            ]}
             onPress={() => router.push(`/contenedor/${item.id_contenedor}`)}
             accessibilityRole="button"
             accessibilityLabel={`Ir al contenedor de ${item.nombre}`}
           >
             <View style={styles.resultMain}>
-              <Text style={styles.nombreObjeto} numberOfLines={1}>{item.nombre}</Text>
+              <Text style={[styles.nombreObjeto, { color: colors.textPrimary }]} numberOfLines={1}>
+                {item.nombre}
+              </Text>
               {item.descripcion ? (
-                <Text style={styles.descripcionObjeto} numberOfLines={2}>{item.descripcion}</Text>
+                <Text style={[styles.descripcionObjeto, { color: colors.textSecondary }]} numberOfLines={2}>
+                  {item.descripcion}
+                </Text>
               ) : null}
             </View>
-            <View style={styles.contenedorBadge}>
-              <Ionicons name="cube-outline" size={11} color={Colors.accentLight} />
-              <Text style={styles.contenedorBadgeText} numberOfLines={1}>
+            <View style={[styles.contenedorBadge, { backgroundColor: colors.accentMuted }]}>
+              <Ionicons name="cube-outline" size={11} color={colors.accentLight} />
+              <Text style={[styles.contenedorBadgeText, { color: colors.accentLight }]} numberOfLines={1}>
                 {item.nombre_contenedor}
               </Text>
             </View>
@@ -81,9 +98,9 @@ export default function Busqueda() {
         ListEmptyComponent={
           query.trim().length > 0 && !buscando ? (
             <View style={styles.emptyContainer}>
-              <Ionicons name="search-outline" size={48} color={Colors.textMuted} style={styles.emptyIcon} />
-              <Text style={styles.emptyTitle}>Sin resultados</Text>
-              <Text style={styles.emptySubtitle}>
+              <Ionicons name="search-outline" size={48} color={colors.textMuted} style={styles.emptyIcon} />
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Sin resultados</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
                 No se encontraron objetos con ese nombre o descripción.
               </Text>
             </View>
@@ -99,19 +116,16 @@ export default function Busqueda() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.bgBase,
   },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.bgSurface,
     marginHorizontal: Spacing.lg,
     marginTop: Spacing.md,
     marginBottom: Spacing.sm,
     borderRadius: Radii.lg,
     paddingHorizontal: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.borderSubtle,
     ...Shadows.sm,
   },
   searchIconStyle: {
@@ -121,7 +135,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 13,
     fontSize: Typography.base,
-    color: Colors.textPrimary,
   },
   list: {
     paddingTop: Spacing.xs,
@@ -144,27 +157,19 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: Typography.xl,
     fontWeight: Typography.bold,
-    color: Colors.textPrimary,
   },
   emptySubtitle: {
     fontSize: Typography.base,
-    color: Colors.textMuted,
     textAlign: 'center',
     lineHeight: Typography.base * Typography.relaxed,
   },
   resultCard: {
-    backgroundColor: Colors.bgSurface,
     marginHorizontal: Spacing.lg,
     marginVertical: 4,
     borderRadius: Radii.lg,
     padding: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.borderSubtle,
     ...Shadows.sm,
-  },
-  resultCardPressed: {
-    opacity: 0.75,
-    backgroundColor: Colors.bgElevated,
   },
   resultMain: {
     marginBottom: Spacing.sm,
@@ -172,12 +177,10 @@ const styles = StyleSheet.create({
   nombreObjeto: {
     fontSize: Typography.base,
     fontWeight: Typography.semibold,
-    color: Colors.textPrimary,
     marginBottom: 3,
   },
   descripcionObjeto: {
     fontSize: Typography.sm,
-    color: Colors.textSecondary,
     lineHeight: Typography.sm * Typography.normal,
   },
   contenedorBadge: {
@@ -185,14 +188,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: Colors.accentMuted,
     borderRadius: Radii.full,
     paddingHorizontal: Spacing.md,
     paddingVertical: 4,
   },
   contenedorBadgeText: {
     fontSize: Typography.xs,
-    color: Colors.accentLight,
     fontWeight: Typography.medium,
   },
 });

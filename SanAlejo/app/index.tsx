@@ -9,10 +9,12 @@ import { deleteImagesFromStorage } from '../src/utils/imageStorage';
 import { ContenedorItem } from '../src/components/ContenedorItem';
 import { ConfirmDialog } from '../src/components/ConfirmDialog';
 import { FAB } from '../src/components/FAB';
-import { Colors, Spacing, Typography, Radii } from '../src/theme';
+import { Spacing, Typography, Radii } from '../src/theme';
+import { useTheme } from '../src/context/ThemeContext';
 
 export default function ListaContenedores() {
   const db = useSQLiteContext();
+  const { colors } = useTheme();
   const [contenedores, setContenedores] = useState<Contenedor[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [contenedorAEliminar, setContenedorAEliminar] = useState<Contenedor | null>(null);
@@ -48,7 +50,7 @@ export default function ListaContenedores() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bgBase }]}>
       <Stack.Screen
         options={{
           title: 'San Alejo',
@@ -59,15 +61,15 @@ export default function ListaContenedores() {
               accessibilityRole="button"
               accessibilityLabel="Buscar objetos"
             >
-              <Ionicons name="search-outline" size={22} color={Colors.textPrimary} />
+              <Ionicons name="search-outline" size={22} color={colors.textPrimary} />
             </Pressable>
           ),
         }}
       />
 
       {(error || deleteError) ? (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorText}>{error ?? deleteError}</Text>
+        <View style={[styles.errorBanner, { backgroundColor: colors.dangerMuted, borderLeftColor: colors.danger }]}>
+          <Text style={[styles.errorText, { color: colors.danger }]}>{error ?? deleteError}</Text>
         </View>
       ) : null}
 
@@ -83,16 +85,16 @@ export default function ListaContenedores() {
         )}
         ListHeaderComponent={
           contenedores.length > 0 ? (
-            <Text style={styles.sectionLabel}>
+            <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
               {contenedores.length} contenedor{contenedores.length !== 1 ? 'es' : ''}
             </Text>
           ) : null
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="archive-outline" size={52} color={Colors.textMuted} style={styles.emptyIcon} />
-            <Text style={styles.emptyTitle}>Sin contenedores</Text>
-            <Text style={styles.emptySubtitle}>
+            <Ionicons name="archive-outline" size={52} color={colors.textMuted} style={styles.emptyIcon} />
+            <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Sin contenedores</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
               Agrega tu primera caja, maleta o cajón.
             </Text>
           </View>
@@ -115,7 +117,6 @@ export default function ListaContenedores() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.bgBase,
   },
   list: {
     paddingTop: Spacing.sm,
@@ -127,7 +128,6 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: Typography.xs,
     fontWeight: Typography.semibold,
-    color: Colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginHorizontal: Spacing.lg,
@@ -147,19 +147,15 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: Typography.xl,
     fontWeight: Typography.bold,
-    color: Colors.textPrimary,
     textAlign: 'center',
   },
   emptySubtitle: {
     fontSize: Typography.base,
-    color: Colors.textMuted,
     textAlign: 'center',
     lineHeight: Typography.base * Typography.relaxed,
   },
   errorBanner: {
-    backgroundColor: Colors.dangerMuted,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.danger,
     marginHorizontal: Spacing.lg,
     marginTop: Spacing.md,
     paddingHorizontal: Spacing.md,
@@ -167,7 +163,6 @@ const styles = StyleSheet.create({
     borderRadius: Radii.sm,
   },
   errorText: {
-    color: Colors.danger,
     fontSize: Typography.sm,
   },
   searchBtn: {

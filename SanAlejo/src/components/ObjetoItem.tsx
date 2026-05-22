@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Objeto } from '../db/objetoRepository';
-import { Colors, Radii, Spacing, Typography } from '../theme';
+import { Radii, Spacing, Typography } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 
 interface ObjetoItemProps {
   objeto: Objeto;
@@ -11,8 +12,15 @@ interface ObjetoItemProps {
 }
 
 export function ObjetoItem({ objeto, onEdit, onDelete }: ObjetoItemProps) {
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.bgSurface, borderBottomColor: colors.borderSubtle },
+      ]}
+    >
       {objeto.foto_uri !== null ? (
         <Image
           source={{ uri: objeto.foto_uri }}
@@ -20,34 +28,45 @@ export function ObjetoItem({ objeto, onEdit, onDelete }: ObjetoItemProps) {
           accessibilityLabel={`Foto de ${objeto.nombre}`}
         />
       ) : (
-        <View style={styles.fotoPlaceholder}>
-          <Ionicons name="cube-outline" size={24} color={Colors.textMuted} />
+        <View style={[styles.fotoPlaceholder, { backgroundColor: colors.bgMuted }]}>
+          <Ionicons name="cube-outline" size={24} color={colors.textMuted} />
         </View>
       )}
 
       <View style={styles.textContainer}>
-        <Text style={styles.nombre} numberOfLines={1}>{objeto.nombre}</Text>
+        <Text style={[styles.nombre, { color: colors.textPrimary }]} numberOfLines={1}>
+          {objeto.nombre}
+        </Text>
         {objeto.descripcion ? (
-          <Text style={styles.descripcion} numberOfLines={2}>{objeto.descripcion}</Text>
+          <Text style={[styles.descripcion, { color: colors.textSecondary }]} numberOfLines={2}>
+            {objeto.descripcion}
+          </Text>
         ) : null}
       </View>
 
       <View style={styles.actions}>
         <Pressable
-          style={({ pressed }) => [styles.editBtn, pressed && styles.editBtnPressed]}
+          style={({ pressed }) => [
+            styles.editBtn,
+            { borderColor: colors.accent },
+            pressed && { backgroundColor: colors.accentMuted },
+          ]}
           onPress={onEdit}
           accessibilityRole="button"
           accessibilityLabel={`Editar ${objeto.nombre}`}
         >
-          <Ionicons name="pencil-outline" size={15} color={Colors.accentLight} />
+          <Ionicons name="pencil-outline" size={15} color={colors.accentLight} />
         </Pressable>
         <Pressable
-          style={({ pressed }) => [styles.deleteBtn, pressed && styles.deleteBtnPressed]}
+          style={({ pressed }) => [
+            styles.deleteBtn,
+            { backgroundColor: pressed ? colors.danger : colors.dangerMuted },
+          ]}
           onPress={onDelete}
           accessibilityRole="button"
           accessibilityLabel={`Eliminar ${objeto.nombre}`}
         >
-          <Ionicons name="trash-outline" size={15} color={Colors.danger} />
+          <Ionicons name="trash-outline" size={15} color={colors.danger} />
         </Pressable>
       </View>
     </View>
@@ -60,9 +79,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.lg,
-    backgroundColor: Colors.bgSurface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.borderSubtle,
   },
   foto: {
     width: 52,
@@ -74,7 +91,6 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: Radii.md,
-    backgroundColor: Colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.md,
@@ -86,12 +102,10 @@ const styles = StyleSheet.create({
   nombre: {
     fontSize: Typography.base,
     fontWeight: Typography.semibold,
-    color: Colors.textPrimary,
     marginBottom: 3,
   },
   descripcion: {
     fontSize: Typography.sm,
-    color: Colors.textSecondary,
     lineHeight: Typography.sm * Typography.normal,
   },
   actions: {
@@ -102,21 +116,13 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
     borderRadius: Radii.sm,
     borderWidth: 1,
-    borderColor: Colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  editBtnPressed: {
-    backgroundColor: Colors.accentMuted,
   },
   deleteBtn: {
     padding: Spacing.sm,
     borderRadius: Radii.sm,
-    backgroundColor: Colors.dangerMuted,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  deleteBtnPressed: {
-    backgroundColor: Colors.danger,
   },
 });

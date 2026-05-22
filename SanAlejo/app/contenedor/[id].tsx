@@ -15,11 +15,13 @@ import { Objeto, getObjetosByContenedor, deleteObjeto } from '../../src/db/objet
 import { ObjetoItem } from '../../src/components/ObjetoItem';
 import { ConfirmDialog } from '../../src/components/ConfirmDialog';
 import { deleteImageFromStorage } from '../../src/utils/imageStorage';
-import { Colors, Radii, Shadows, Spacing, Typography } from '../../src/theme';
+import { Radii, Shadows, Spacing, Typography } from '../../src/theme';
+import { useTheme } from '../../src/context/ThemeContext';
 
 export default function DetalleContenedor() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const db = useSQLiteContext();
+  const { colors } = useTheme();
 
   const [contenedor, setContenedor] = useState<Contenedor | null>(null);
   const [objetos, setObjetos] = useState<Objeto[]>([]);
@@ -65,7 +67,7 @@ export default function DetalleContenedor() {
   const titulo = contenedor?.nombre ?? 'Contenedor';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bgBase }]}>
       <Stack.Screen
         options={{
           title: titulo,
@@ -76,7 +78,7 @@ export default function DetalleContenedor() {
               accessibilityLabel="Editar contenedor"
               style={styles.editHeaderBtn}
             >
-              <Text style={styles.editHeaderText}>Editar</Text>
+              <Text style={[styles.editHeaderText, { color: colors.accentLight }]}>Editar</Text>
             </Pressable>
           ),
         }}
@@ -84,28 +86,34 @@ export default function DetalleContenedor() {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={Colors.accent} />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       ) : (
         <>
           {(error || deleteError) ? (
-            <View style={styles.errorBanner}>
-              <Text style={styles.errorText}>{error ?? deleteError}</Text>
+            <View style={[styles.errorBanner, { backgroundColor: colors.dangerMuted, borderLeftColor: colors.danger }]}>
+              <Text style={[styles.errorText, { color: colors.danger }]}>{error ?? deleteError}</Text>
             </View>
           ) : null}
 
           {contenedor ? (
-            <View style={styles.header}>
-              <View style={styles.headerAccent} />
+            <View style={[styles.header, { backgroundColor: colors.bgSurface }]}>
+              <View style={[styles.headerAccent, { backgroundColor: colors.accent }]} />
               <View style={styles.headerContent}>
-                <Text style={styles.headerNombre}>{contenedor.nombre}</Text>
+                <Text style={[styles.headerNombre, { color: colors.textPrimary }]}>
+                  {contenedor.nombre}
+                </Text>
                 {contenedor.descripcion ? (
-                  <Text style={styles.headerDescripcion}>{contenedor.descripcion}</Text>
+                  <Text style={[styles.headerDescripcion, { color: colors.textSecondary }]}>
+                    {contenedor.descripcion}
+                  </Text>
                 ) : null}
                 {contenedor.ubicacion ? (
                   <View style={styles.ubicacionRow}>
-                    <Ionicons name="location-outline" size={13} color={Colors.textMuted} />
-                    <Text style={styles.ubicacionText}>{contenedor.ubicacion}</Text>
+                    <Ionicons name="location-outline" size={13} color={colors.textMuted} />
+                    <Text style={[styles.ubicacionText, { color: colors.textMuted }]}>
+                      {contenedor.ubicacion}
+                    </Text>
                   </View>
                 ) : null}
               </View>
@@ -113,7 +121,7 @@ export default function DetalleContenedor() {
           ) : null}
 
           {objetos.length > 0 ? (
-            <Text style={styles.sectionLabel}>
+            <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
               {objetos.length} objeto{objetos.length !== 1 ? 's' : ''}
             </Text>
           ) : null}
@@ -130,9 +138,9 @@ export default function DetalleContenedor() {
             )}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Ionicons name="archive-outline" size={48} color={Colors.textMuted} style={styles.emptyIcon} />
-                <Text style={styles.emptyTitle}>Contenedor vacío</Text>
-                <Text style={styles.emptySubtitle}>
+                <Ionicons name="archive-outline" size={48} color={colors.textMuted} style={styles.emptyIcon} />
+                <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Contenedor vacío</Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
                   Agrega los objetos que hay dentro.
                 </Text>
               </View>
@@ -141,12 +149,15 @@ export default function DetalleContenedor() {
           />
 
           <Pressable
-            style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}
+            style={({ pressed }) => [
+              styles.addButton,
+              { backgroundColor: pressed ? colors.accentDark : colors.accent },
+            ]}
             onPress={() => router.push(`/contenedor/objeto/nuevo?id_contenedor=${id}`)}
             accessibilityRole="button"
             accessibilityLabel="Agregar objeto"
           >
-            <Text style={styles.addButtonText}>+ Agregar objeto</Text>
+            <Text style={[styles.addButtonText, { color: colors.textOnAccent }]}>+ Agregar objeto</Text>
           </Pressable>
         </>
       )}
@@ -164,7 +175,6 @@ export default function DetalleContenedor() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.bgBase,
   },
   centered: {
     flex: 1,
@@ -177,13 +187,10 @@ const styles = StyleSheet.create({
   },
   editHeaderText: {
     fontSize: Typography.base,
-    color: Colors.accentLight,
     fontWeight: Typography.medium,
   },
   errorBanner: {
-    backgroundColor: Colors.dangerMuted,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.danger,
     marginHorizontal: Spacing.lg,
     marginTop: Spacing.md,
     paddingHorizontal: Spacing.md,
@@ -191,12 +198,10 @@ const styles = StyleSheet.create({
     borderRadius: Radii.sm,
   },
   errorText: {
-    color: Colors.danger,
     fontSize: Typography.sm,
   },
   header: {
     flexDirection: 'row',
-    backgroundColor: Colors.bgSurface,
     marginHorizontal: Spacing.lg,
     marginTop: Spacing.md,
     marginBottom: Spacing.sm,
@@ -206,7 +211,6 @@ const styles = StyleSheet.create({
   },
   headerAccent: {
     width: 4,
-    backgroundColor: Colors.accent,
   },
   headerContent: {
     flex: 1,
@@ -215,12 +219,10 @@ const styles = StyleSheet.create({
   headerNombre: {
     fontSize: Typography.lg,
     fontWeight: Typography.bold,
-    color: Colors.textPrimary,
     marginBottom: 4,
   },
   headerDescripcion: {
     fontSize: Typography.sm,
-    color: Colors.textSecondary,
     marginBottom: 6,
     lineHeight: Typography.sm * Typography.normal,
   },
@@ -231,12 +233,10 @@ const styles = StyleSheet.create({
   },
   ubicacionText: {
     fontSize: Typography.sm,
-    color: Colors.textMuted,
   },
   sectionLabel: {
     fontSize: Typography.xs,
     fontWeight: Typography.semibold,
-    color: Colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginHorizontal: Spacing.lg,
@@ -262,11 +262,9 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: Typography.xl,
     fontWeight: Typography.bold,
-    color: Colors.textPrimary,
   },
   emptySubtitle: {
     fontSize: Typography.base,
-    color: Colors.textMuted,
     textAlign: 'center',
     lineHeight: Typography.base * Typography.relaxed,
   },
@@ -275,17 +273,12 @@ const styles = StyleSheet.create({
     bottom: 24,
     left: Spacing.lg,
     right: Spacing.lg,
-    backgroundColor: Colors.accent,
     borderRadius: Radii.lg,
     paddingVertical: 15,
     alignItems: 'center',
     ...Shadows.lg,
   },
-  addButtonPressed: {
-    backgroundColor: Colors.accentDark,
-  },
   addButtonText: {
-    color: Colors.textOnAccent,
     fontSize: Typography.base,
     fontWeight: Typography.semibold,
   },

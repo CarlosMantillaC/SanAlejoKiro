@@ -1,16 +1,64 @@
 /**
  * San Alejo — Design System Tokens
- * Dark-first palette with indigo accent. High contrast, professional look.
+ * Supports dark and light themes with indigo accent.
  */
 
-export const Colors = {
-  // Backgrounds
-  bgBase: '#0F172A',       // deepest background
-  bgSurface: '#1E293B',    // cards, inputs
-  bgElevated: '#273549',   // elevated cards, modals
-  bgMuted: '#334155',      // dividers, subtle fills
+// ─── Interfaces ──────────────────────────────────────────────────────────────
 
-  // Accent — Indigo
+/** All color tokens for a theme variant */
+export interface ThemeColors {
+  // Backgrounds
+  bgBase: string;
+  bgSurface: string;
+  bgElevated: string;
+  bgMuted: string;
+
+  // Accent — Indigo (invariant across themes)
+  accent: string;
+  accentLight: string;
+  accentDark: string;
+  accentMuted: string;
+
+  // Semantic
+  danger: string;
+  dangerMuted: string;
+  dangerDark: string;
+  success: string;
+  warning: string;
+
+  // Text
+  textPrimary: string;
+  textSecondary: string;
+  textMuted: string;
+  textOnAccent: string;
+  textOnDanger: string;
+
+  // Borders
+  border: string;
+  borderSubtle: string;
+  borderFocus: string;
+
+  // Overlay
+  overlay: string;
+}
+
+export type ColorScheme = 'dark' | 'light';
+
+export interface Theme {
+  colors: ThemeColors;
+  scheme: ColorScheme;
+}
+
+// ─── Dark palette ─────────────────────────────────────────────────────────────
+
+export const darkColors: ThemeColors = {
+  // Backgrounds
+  bgBase: '#0F172A',
+  bgSurface: '#1E293B',
+  bgElevated: '#273549',
+  bgMuted: '#334155',
+
+  // Accent
   accent: '#6366F1',
   accentLight: '#818CF8',
   accentDark: '#4F46E5',
@@ -38,6 +86,64 @@ export const Colors = {
   // Overlay
   overlay: 'rgba(0,0,0,0.65)',
 };
+
+// ─── Light palette ────────────────────────────────────────────────────────────
+
+export const lightColors: ThemeColors = {
+  // Backgrounds (high luminosity, bgBase ≥ #F8FAFC)
+  bgBase: '#F8FAFC',
+  bgSurface: '#FFFFFF',
+  bgElevated: '#F1F5F9',
+  bgMuted: '#E2E8F0',
+
+  // Accent (invariant)
+  accent: '#6366F1',
+  accentLight: '#818CF8',
+  accentDark: '#4F46E5',
+  accentMuted: 'rgba(99,102,241,0.12)',
+
+  // Semantic
+  danger: '#DC2626',
+  dangerMuted: 'rgba(220,38,38,0.10)',
+  dangerDark: '#B91C1C',
+  success: '#16A34A',
+  warning: '#D97706',
+
+  // Text (contrast ≥ 4.5:1 over light backgrounds per WCAG AA)
+  textPrimary: '#0F172A',   // ~17:1 over #F8FAFC
+  textSecondary: '#475569', // ~5.9:1 over #F8FAFC
+  textMuted: '#64748B',     // ~4.6:1 over #F8FAFC
+  textOnAccent: '#FFFFFF',
+  textOnDanger: '#FFFFFF',
+
+  // Borders
+  border: '#E2E8F0',
+  borderSubtle: 'rgba(0,0,0,0.06)',
+  borderFocus: '#6366F1',
+
+  // Overlay
+  overlay: 'rgba(0,0,0,0.45)',
+};
+
+// ─── Theme objects ────────────────────────────────────────────────────────────
+
+export const darkTheme: Theme = { colors: darkColors, scheme: 'dark' };
+export const lightTheme: Theme = { colors: lightColors, scheme: 'light' };
+
+/**
+ * Selects the theme based on the system color scheme.
+ * Falls back to lightTheme when colorScheme is null or undefined.
+ */
+export function resolveTheme(colorScheme: string | null | undefined): Theme {
+  return colorScheme === 'dark' ? darkTheme : lightTheme;
+}
+
+// ─── Backward-compatibility alias ────────────────────────────────────────────
+
+/** @deprecated Use `useTheme().colors` instead. Kept for compatibility. */
+export const Colors = darkColors;
+
+// ─── Shared tokens (theme-independent) ───────────────────────────────────────
 
 export const Typography = {
   // Font sizes
@@ -105,14 +211,14 @@ export const Shadows = {
   },
 };
 
-/** Shared header options for Stack.Screen */
+/** @deprecated Use AppNavigator with useTheme() in _layout.tsx instead. */
 export const headerTheme = {
-  headerStyle: { backgroundColor: Colors.bgSurface },
-  headerTintColor: Colors.textPrimary,
+  headerStyle: { backgroundColor: darkColors.bgSurface },
+  headerTintColor: darkColors.textPrimary,
   headerTitleStyle: {
-    color: Colors.textPrimary,
+    color: darkColors.textPrimary,
     fontWeight: Typography.semibold,
     fontSize: Typography.md,
   },
-  contentStyle: { backgroundColor: Colors.bgBase },
+  contentStyle: { backgroundColor: darkColors.bgBase },
 };

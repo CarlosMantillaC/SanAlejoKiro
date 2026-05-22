@@ -1,7 +1,8 @@
 import React from 'react';
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Radii, Shadows, Spacing, Typography } from '../theme';
+import { Radii, Shadows, Spacing, Typography } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 
 interface ConfirmDialogProps {
   visible: boolean;
@@ -11,6 +12,8 @@ interface ConfirmDialogProps {
 }
 
 export function ConfirmDialog({ visible, message, onConfirm, onCancel }: ConfirmDialogProps) {
+  const { colors } = useTheme();
+
   return (
     <Modal
       visible={visible}
@@ -18,32 +21,50 @@ export function ConfirmDialog({ visible, message, onConfirm, onCancel }: Confirm
       animationType="fade"
       onRequestClose={onCancel}
     >
-      <Pressable style={styles.overlay} onPress={onCancel}>
-        <Pressable style={styles.card} onPress={() => {}}>
+      <Pressable
+        style={[styles.overlay, { backgroundColor: colors.overlay }]}
+        onPress={onCancel}
+      >
+        <Pressable
+          style={[
+            styles.card,
+            { backgroundColor: colors.bgElevated, borderColor: colors.borderSubtle },
+          ]}
+          onPress={() => {}}
+        >
           {/* Icon */}
-          <View style={styles.iconWrap}>
-            <Ionicons name="warning-outline" size={28} color={Colors.danger} />
+          <View style={[styles.iconWrap, { backgroundColor: colors.dangerMuted }]}>
+            <Ionicons name="warning-outline" size={28} color={colors.danger} />
           </View>
 
-          <Text style={styles.message}>{message}</Text>
-          <Text style={styles.subtext}>Esta acción no se puede deshacer.</Text>
+          <Text style={[styles.message, { color: colors.textPrimary }]}>{message}</Text>
+          <Text style={[styles.subtext, { color: colors.textMuted }]}>
+            Esta acción no se puede deshacer.
+          </Text>
 
           <View style={styles.buttonRow}>
             <Pressable
-              style={({ pressed }) => [styles.cancelBtn, pressed && styles.cancelBtnPressed]}
+              style={({ pressed }) => [
+                styles.cancelBtn,
+                { borderColor: colors.bgMuted },
+                pressed && { backgroundColor: colors.bgMuted },
+              ]}
               onPress={onCancel}
               accessibilityRole="button"
               accessibilityLabel="Cancelar"
             >
-              <Text style={styles.cancelText}>Cancelar</Text>
+              <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancelar</Text>
             </Pressable>
             <Pressable
-              style={({ pressed }) => [styles.deleteBtn, pressed && styles.deleteBtnPressed]}
+              style={({ pressed }) => [
+                styles.deleteBtn,
+                { backgroundColor: pressed ? colors.dangerDark : colors.danger },
+              ]}
               onPress={onConfirm}
               accessibilityRole="button"
               accessibilityLabel="Eliminar"
             >
-              <Text style={styles.deleteText}>Eliminar</Text>
+              <Text style={[styles.deleteText, { color: colors.textOnDanger }]}>Eliminar</Text>
             </Pressable>
           </View>
         </Pressable>
@@ -55,26 +76,22 @@ export function ConfirmDialog({ visible, message, onConfirm, onCancel }: Confirm
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: Colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.xxxl,
   },
   card: {
-    backgroundColor: Colors.bgElevated,
     borderRadius: Radii.xl,
     padding: Spacing.xxl,
     width: '100%',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.borderSubtle,
     ...Shadows.md,
   },
   iconWrap: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: Colors.dangerMuted,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.lg,
@@ -82,13 +99,11 @@ const styles = StyleSheet.create({
   message: {
     fontSize: Typography.md,
     fontWeight: Typography.semibold,
-    color: Colors.textPrimary,
     textAlign: 'center',
     marginBottom: Spacing.sm,
   },
   subtext: {
     fontSize: Typography.sm,
-    color: Colors.textMuted,
     textAlign: 'center',
     marginBottom: Spacing.xxl,
   },
@@ -102,30 +117,20 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     borderRadius: Radii.md,
     borderWidth: 1,
-    borderColor: Colors.bgMuted,
     alignItems: 'center',
-  },
-  cancelBtnPressed: {
-    backgroundColor: Colors.bgMuted,
   },
   cancelText: {
     fontSize: Typography.base,
-    color: Colors.textSecondary,
     fontWeight: Typography.medium,
   },
   deleteBtn: {
     flex: 1,
     paddingVertical: 13,
     borderRadius: Radii.md,
-    backgroundColor: Colors.danger,
     alignItems: 'center',
-  },
-  deleteBtnPressed: {
-    backgroundColor: Colors.dangerDark,
   },
   deleteText: {
     fontSize: Typography.base,
-    color: Colors.textOnDanger,
     fontWeight: Typography.semibold,
   },
 });

@@ -380,8 +380,8 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
 - [x] 13. Checkpoint final — Verificar integración completa
   - Asegurarse de que todos los tests pasan (smoke, unit, property-based, componentes, pantallas). Consultar al usuario si surgen dudas.
 
-- [ ] 14. Implementar sistema de temas (modo oscuro/claro automático)
-  - [ ] 14.1 Ampliar `src/theme.ts` con paletas dark/light e interfaces
+- [x] 14. Implementar sistema de temas (modo oscuro/claro automático)
+  - [x] 14.1 Ampliar `src/theme.ts` con paletas dark/light e interfaces
     - Agregar interfaz `ThemeColors` con todos los tokens de color (bgBase, bgSurface, bgElevated, bgMuted, accent, accentLight, accentDark, accentMuted, danger, dangerMuted, dangerDark, success, warning, textPrimary, textSecondary, textMuted, textOnAccent, textOnDanger, border, borderSubtle, borderFocus, overlay)
     - Agregar tipo `ColorScheme = 'dark' | 'light'`
     - Agregar interfaz `Theme { colors: ThemeColors; scheme: ColorScheme }`
@@ -415,19 +415,19 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - `useTheme()` fuera de `ThemeProvider` → lanza error `'useTheme debe usarse dentro de ThemeProvider'`
     - _Requirements: 11.1, 11.3, 11.14_
 
-  - [ ] 14.5 Crear `src/context/ThemeContext.tsx`
+  - [x] 14.5 Crear `src/context/ThemeContext.tsx`
     - Crear `ThemeContext` con `React.createContext<Theme | undefined>(undefined)`
     - Implementar `ThemeProvider({ children })` que llama `useColorScheme()` de React Native, llama `resolveTheme(colorScheme)` y provee el tema resultante via `ThemeContext.Provider`
     - Implementar `useTheme(): Theme` que lee el contexto y lanza error si es `undefined`
     - _Requirements: 11.1, 11.2, 11.3, 11.14_
 
-  - [ ] 14.6 Actualizar `app/_layout.tsx` para usar `ThemeProvider` y `AppNavigator` dinámico
+  - [x] 14.6 Actualizar `app/_layout.tsx` para usar `ThemeProvider` y `AppNavigator` dinámico
     - Extraer componente interno `AppNavigator` que llama `useTheme()` y configura `<Stack>` con `headerStyle`, `headerTintColor`, `headerTitleStyle` y `contentStyle` usando `colors` del tema activo
     - Agregar `<StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />` dentro de `AppNavigator` (importar de `expo-status-bar`)
     - Envolver todo con `<ThemeProvider>` como capa más externa (por encima de `Suspense` y `SQLiteProvider`)
     - _Requirements: 11.10, 11.11, 11.12_
 
-  - [ ] 14.7 Migrar componentes reutilizables para usar `useTheme`
+  - [x] 14.7 Migrar componentes reutilizables para usar `useTheme`
     - Actualizar `src/components/FAB.tsx`: reemplazar `Colors` por `const { colors } = useTheme()` y aplicar `colors.*` en los estilos inline
     - Actualizar `src/components/ConfirmDialog.tsx`: reemplazar `Colors` por `useTheme()` y aplicar colores dinámicos en fondo del modal, textos y botones
     - Actualizar `src/components/ContenedorItem.tsx`: reemplazar `Colors` por `useTheme()` y aplicar colores dinámicos en card, textos y bordes
@@ -435,7 +435,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Actualizar `src/components/ImagePickerButton.tsx`: reemplazar `Colors` por `useTheme()` y aplicar colores dinámicos en botones y vista previa
     - _Requirements: 11.6, 11.7, 11.8, 11.9_
 
-  - [ ] 14.8 Migrar pantallas para usar `useTheme`
+  - [x] 14.8 Migrar pantallas para usar `useTheme`
     - Actualizar `app/index.tsx`: reemplazar `Colors` por `useTheme()` y aplicar `colors.*` en fondo, textos, bordes y mensaje de estado vacío
     - Actualizar `app/contenedor/[id].tsx`: reemplazar `Colors` por `useTheme()` y aplicar colores dinámicos en todos los elementos visibles
     - Actualizar `app/contenedor/nuevo.tsx`: reemplazar `Colors` por `useTheme()` y aplicar colores dinámicos en inputs, labels y botón "Guardar"
