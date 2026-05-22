@@ -445,7 +445,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Actualizar `app/busqueda.tsx`: reemplazar `Colors` por `useTheme()` y aplicar colores dinámicos en barra de búsqueda, resultados y mensaje de estado vacío
     - _Requirements: 11.6, 11.7, 11.8, 11.9_
 
-- [ ] 15. Checkpoint — Verificar sistema de temas
+- [x] 15. Checkpoint — Verificar sistema de temas
   - Asegurarse de que todos los tests del sistema de temas pasan (theme.test.ts, ThemeProvider.test.tsx, property tests 17 y 18). Consultar al usuario si surgen dudas.
 
 ## Notas
