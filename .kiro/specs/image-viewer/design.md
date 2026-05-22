@@ -88,6 +88,24 @@ interface ImageViewerProps {
 - El estado de error reemplaza la imagen por un ícono de error y el mensaje `No se pudo cargar la imagen`.
 - El botón de cierre usa `Ionicons` con `accessibilityRole="button"` y `accessibilityLabel="Cerrar visor de imagen"`.
 
+### Zoom y gestos
+
+La interacción de zoom se implementa dentro del mismo `ImageViewer`, usando las dependencias ya presentes en el proyecto (`react-native-gesture-handler` y `react-native-reanimated`) para no introducir nuevas librerías.
+
+#### Reglas de interacción
+
+- El gesto de pellizco escala la imagen desde `1x` hasta un máximo de `4x`.
+- El doble toque alterna entre `1x` y `2x`.
+- El gesto de arrastre solo desplaza la imagen cuando el zoom es mayor que `1x`.
+- Cuando el zoom vuelve a `1x`, la imagen debe recentrarse automáticamente.
+- El gesto de pan no debe disparar el cierre del visor mientras la imagen está ampliada.
+
+#### Estado visual esperado
+
+- El contenedor de imagen debe mantener límites para evitar que la imagen se salga de la pantalla de forma impredecible.
+- Cuando el usuario vuelve a `1x`, la imagen debe volver al centro del viewport.
+- El overlay sigue cerrando el modal cuando se toca fuera de la imagen, independientemente del zoom actual.
+
 ### Integración en pantallas existentes
 
 #### Detalle_Contenedor
@@ -144,10 +162,6 @@ const [imageViewerUri, setImageViewerUri] = useState<string | null>(null);
 - El área de cierre y el contenido deben ser lo suficientemente grandes para interacción táctil.
 - El modal debe bloquear la interacción con la pantalla subyacente mientras está abierto.
 
-### Comportamiento esperado ante gestos
-
-La spec funcional pide soporte de zoom y pan. Esa capacidad se resuelve dentro del mismo componente `ImageViewer`, preferiblemente con una implementación basada en gestos nativa del ecosistema Expo/React Native. El diseño no obliga a una librería concreta, pero sí exige que el componente mantenga la imagen centrada, permita ampliar hasta 4x y respete el doble toque para alternar entre 1x y 2x.
-
 ---
 
 ## Error Handling
@@ -195,5 +209,4 @@ La spec funcional pide soporte de zoom y pan. Esa capacidad se resuelve dentro d
 
 ## Open Questions
 
-- La spec funcional pide zoom y pan, pero todavía no fija una librería concreta para gestos. La implementación puede resolverse con la solución nativa más simple compatible con Expo y sin añadir dependencias innecesarias.
 - Conviene confirmar si la etiqueta accesible de la imagen debe usar el nombre del objeto en todas las pantallas o si puede variar según el origen del visor.

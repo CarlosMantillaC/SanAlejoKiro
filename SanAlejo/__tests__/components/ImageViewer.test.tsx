@@ -20,6 +20,27 @@ jest.mock('@expo/vector-icons', () => {
   };
 });
 
+jest.mock('react-native-gesture-handler', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+
+  const createPassthrough = (displayName: string) => {
+    const Component = React.forwardRef(({ children, ...props }: any, ref: any) =>
+      React.createElement(View, { ref, ...props }, children)
+    );
+    Component.displayName = displayName;
+    return Component;
+  };
+
+  return {
+    State: { ACTIVE: 4 },
+    GestureHandlerRootView: createPassthrough('GestureHandlerRootView'),
+    TapGestureHandler: createPassthrough('TapGestureHandler'),
+    PanGestureHandler: createPassthrough('PanGestureHandler'),
+    PinchGestureHandler: createPassthrough('PinchGestureHandler'),
+  };
+});
+
 function renderWithTheme(ui: React.ReactElement) {
   return render(<ThemeProvider>{ui}</ThemeProvider>);
 }
@@ -68,7 +89,7 @@ describe('ImageViewer', () => {
       <ImageViewer uri="file:///foto.jpg" visible onClose={onClose} />
     );
 
-    fireEvent.press(screen.getByTestId('image-viewer-overlay'));
+    fireEvent.press(screen.getByTestId('image-viewer-close-overlay'));
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });
@@ -120,5 +141,15 @@ describe('ImageViewer', () => {
     expect(screen.getByLabelText('Vista ampliada de la imagen').props.accessibilityLabel).toBe(
       'Vista ampliada de la imagen'
     );
+  });
+
+  it('muestra controles visibles para ampliar y reducir zoom', () => {
+    renderWithTheme(
+      <ImageViewer uri="file:///foto.jpg" visible onClose={jest.fn()} />
+    );
+
+    expect(screen.getByLabelText('Aumentar zoom')).toBeTruthy();
+    expect(screen.getByLabelText('Reducir zoom')).toBeTruthy();
+    expect(screen.getByLabelText('Restablecer zoom')).toBeTruthy();
   });
 });
