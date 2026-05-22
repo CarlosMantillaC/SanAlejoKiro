@@ -97,14 +97,13 @@ export default function NuevoObjeto() {
           <View style={styles.field}>
             <Text style={styles.label}>Descripción</Text>
             <TextInput
-              style={[styles.input, styles.inputMultiline, errors.descripcion ? styles.inputError : null]}
+              style={[styles.input, errors.descripcion ? styles.inputError : null]}
               value={descripcion}
               onChangeText={(t) => { setDescripcion(t); clearError('descripcion'); }}
               placeholder="Ej. Destornillador de cabeza Phillips #2"
               placeholderTextColor={Colors.textMuted}
               selectionColor={Colors.accent}
               multiline
-              numberOfLines={3}
               accessibilityLabel="Descripción del objeto"
             />
             {errors.descripcion ? <Text style={styles.fieldError}>{errors.descripcion}</Text> : null}

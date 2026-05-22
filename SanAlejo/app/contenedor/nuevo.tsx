@@ -81,14 +81,13 @@ export default function NuevoContenedor() {
           <View style={styles.field}>
             <Text style={styles.label}>Descripción</Text>
             <TextInput
-              style={[styles.input, styles.inputMultiline, errors.descripcion ? styles.inputError : null]}
+              style={[styles.input, errors.descripcion ? styles.inputError : null]}
               value={descripcion}
               onChangeText={(t) => { setDescripcion(t); clearError('descripcion'); }}
               placeholder="Ej. Herramientas del taller"
               placeholderTextColor={Colors.textMuted}
               selectionColor={Colors.accent}
               multiline
-              numberOfLines={3}
               accessibilityLabel="Descripción del contenedor"
             />
             {errors.descripcion ? <Text style={styles.fieldError}>{errors.descripcion}</Text> : null}
@@ -167,10 +166,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: Colors.bgMuted,
-  },
-  inputMultiline: {
-    minHeight: 72,
-    textAlignVertical: 'top',
   },
   inputError: {
     borderBottomColor: Colors.danger,

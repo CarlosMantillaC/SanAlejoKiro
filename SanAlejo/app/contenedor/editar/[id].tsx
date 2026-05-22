@@ -106,7 +106,7 @@ export default function EditarContenedor() {
           <View style={styles.field}>
             <Text style={styles.label}>Descripción</Text>
             <TextInput
-              style={[styles.input, styles.inputMultiline, errors.descripcion ? styles.inputError : null]}
+              style={[styles.input, errors.descripcion ? styles.inputError : null]}
               value={descripcion}
               onChangeText={(t) => { setDescripcion(t); clearError('descripcion'); }}
               placeholder="Descripción del contenedor"
