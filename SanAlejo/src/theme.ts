@@ -71,10 +71,10 @@ export const darkColors: ThemeColors = {
   success: '#22C55E',
   warning: '#F59E0B',
 
-  // Text
-  textPrimary: '#F1F5F9',
-  textSecondary: '#94A3B8',
-  textMuted: '#64748B',
+  // Text (contrast ≥ 4.5:1 over all dark backgrounds per WCAG AA)
+  textPrimary: '#F1F5F9',   // ~9.45:1 over bgMuted (darkest bg)
+  textSecondary: '#9EAEC2', // ~4.58:1 over bgMuted (darkest bg)
+  textMuted: '#A0AEC0',     // ~4.59:1 over bgMuted (darkest bg)
   textOnAccent: '#FFFFFF',
   textOnDanger: '#FFFFFF',
 
@@ -109,10 +109,10 @@ export const lightColors: ThemeColors = {
   success: '#16A34A',
   warning: '#D97706',
 
-  // Text (contrast ≥ 4.5:1 over light backgrounds per WCAG AA)
+  // Text (contrast ≥ 4.5:1 over all light backgrounds per WCAG AA)
   textPrimary: '#0F172A',   // ~17:1 over #F8FAFC
   textSecondary: '#475569', // ~5.9:1 over #F8FAFC
-  textMuted: '#64748B',     // ~4.6:1 over #F8FAFC
+  textMuted: '#5E6E82',     // ~4.76:1 over #F1F5F9 (bgElevated), ~4.98:1 over #F8FAFC
   textOnAccent: '#FFFFFF',
   textOnDanger: '#FFFFFF',
 
