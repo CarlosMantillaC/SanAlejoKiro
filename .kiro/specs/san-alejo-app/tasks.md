@@ -380,6 +380,74 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
 - [x] 13. Checkpoint final — Verificar integración completa
   - Asegurarse de que todos los tests pasan (smoke, unit, property-based, componentes, pantallas). Consultar al usuario si surgen dudas.
 
+- [ ] 14. Implementar sistema de temas (modo oscuro/claro automático)
+  - [ ] 14.1 Ampliar `src/theme.ts` con paletas dark/light e interfaces
+    - Agregar interfaz `ThemeColors` con todos los tokens de color (bgBase, bgSurface, bgElevated, bgMuted, accent, accentLight, accentDark, accentMuted, danger, dangerMuted, dangerDark, success, warning, textPrimary, textSecondary, textMuted, textOnAccent, textOnDanger, border, borderSubtle, borderFocus, overlay)
+    - Agregar tipo `ColorScheme = 'dark' | 'light'`
+    - Agregar interfaz `Theme { colors: ThemeColors; scheme: ColorScheme }`
+    - Crear `darkColors: ThemeColors` con los valores actuales de `Colors` (fondos `#0F172A`/`#1E293B`/`#273549`, textos `#F1F5F9`/`#94A3B8`)
+    - Crear `lightColors: ThemeColors` con paleta clara (bgBase mínimo `#F8FAFC`, textPrimary `#0F172A` con contraste ≥ 4.5:1 según WCAG AA)
+    - Crear `darkTheme: Theme` y `lightTheme: Theme`
+    - Implementar `resolveTheme(colorScheme: string | null | undefined): Theme` — retorna `darkTheme` si `colorScheme === 'dark'`, `lightTheme` en cualquier otro caso (incluyendo `null`/`undefined`)
+    - Mantener `export const Colors = darkColors` como alias de compatibilidad para código existente
+    - _Requirements: 11.1, 11.4, 11.5, 11.13, 11.14_
+
+  - [ ]* 14.2 Escribir property test — Property 17: Contraste WCAG AA en el tema light
+    - Escribir en `__tests__/unit/theme.test.ts`
+    - **Property 17: Contraste WCAG AA en el tema light**
+    - **Validates: Requirements 11.5**
+    - Implementar función auxiliar `contrastRatio(hex1, hex2)` usando la fórmula de luminancia relativa WCAG 2.1
+    - Para cada par (textPrimary, textSecondary, textMuted) × (bgBase, bgSurface, bgElevated) de `lightColors`, verificar que el ratio de contraste es ≥ 4.5:1
+
+  - [ ]* 14.3 Escribir property test — Property 18: Invariancia del color de acento
+    - Escribir en `__tests__/unit/theme.test.ts`
+    - **Property 18: Invariancia del color de acento en ambos temas**
+    - **Validates: Requirements 11.13**
+    - Usar `fc.constantFrom(darkTheme, lightTheme)` y verificar que `theme.colors.accent === '#6366F1'` para cualquier tema válido
+
+  - [ ]* 14.4 Escribir unit tests para `resolveTheme` y `ThemeProvider`
+    - Escribir en `__tests__/unit/theme.test.ts` y `__tests__/components/ThemeProvider.test.tsx`
+    - `resolveTheme('dark')` → retorna `darkTheme`
+    - `resolveTheme('light')` → retorna `lightTheme`
+    - `resolveTheme(null)` → retorna `lightTheme` (fallback)
+    - `resolveTheme(undefined)` → retorna `lightTheme` (fallback)
+    - `useTheme()` dentro de `ThemeProvider` → retorna el tema activo con `scheme` válido
+    - `useTheme()` fuera de `ThemeProvider` → lanza error `'useTheme debe usarse dentro de ThemeProvider'`
+    - _Requirements: 11.1, 11.3, 11.14_
+
+  - [ ] 14.5 Crear `src/context/ThemeContext.tsx`
+    - Crear `ThemeContext` con `React.createContext<Theme | undefined>(undefined)`
+    - Implementar `ThemeProvider({ children })` que llama `useColorScheme()` de React Native, llama `resolveTheme(colorScheme)` y provee el tema resultante via `ThemeContext.Provider`
+    - Implementar `useTheme(): Theme` que lee el contexto y lanza error si es `undefined`
+    - _Requirements: 11.1, 11.2, 11.3, 11.14_
+
+  - [ ] 14.6 Actualizar `app/_layout.tsx` para usar `ThemeProvider` y `AppNavigator` dinámico
+    - Extraer componente interno `AppNavigator` que llama `useTheme()` y configura `<Stack>` con `headerStyle`, `headerTintColor`, `headerTitleStyle` y `contentStyle` usando `colors` del tema activo
+    - Agregar `<StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />` dentro de `AppNavigator` (importar de `expo-status-bar`)
+    - Envolver todo con `<ThemeProvider>` como capa más externa (por encima de `Suspense` y `SQLiteProvider`)
+    - _Requirements: 11.10, 11.11, 11.12_
+
+  - [ ] 14.7 Migrar componentes reutilizables para usar `useTheme`
+    - Actualizar `src/components/FAB.tsx`: reemplazar `Colors` por `const { colors } = useTheme()` y aplicar `colors.*` en los estilos inline
+    - Actualizar `src/components/ConfirmDialog.tsx`: reemplazar `Colors` por `useTheme()` y aplicar colores dinámicos en fondo del modal, textos y botones
+    - Actualizar `src/components/ContenedorItem.tsx`: reemplazar `Colors` por `useTheme()` y aplicar colores dinámicos en card, textos y bordes
+    - Actualizar `src/components/ObjetoItem.tsx`: reemplazar `Colors` por `useTheme()` y aplicar colores dinámicos en ítem, textos y acciones
+    - Actualizar `src/components/ImagePickerButton.tsx`: reemplazar `Colors` por `useTheme()` y aplicar colores dinámicos en botones y vista previa
+    - _Requirements: 11.6, 11.7, 11.8, 11.9_
+
+  - [ ] 14.8 Migrar pantallas para usar `useTheme`
+    - Actualizar `app/index.tsx`: reemplazar `Colors` por `useTheme()` y aplicar `colors.*` en fondo, textos, bordes y mensaje de estado vacío
+    - Actualizar `app/contenedor/[id].tsx`: reemplazar `Colors` por `useTheme()` y aplicar colores dinámicos en todos los elementos visibles
+    - Actualizar `app/contenedor/nuevo.tsx`: reemplazar `Colors` por `useTheme()` y aplicar colores dinámicos en inputs, labels y botón "Guardar"
+    - Actualizar `app/contenedor/editar/[id].tsx`: reemplazar `Colors` por `useTheme()` igual que en modo creación
+    - Actualizar `app/contenedor/objeto/nuevo.tsx`: reemplazar `Colors` por `useTheme()` y aplicar colores dinámicos en inputs, labels y botón "Guardar"
+    - Actualizar `app/contenedor/objeto/editar/[id].tsx`: reemplazar `Colors` por `useTheme()` igual que en modo creación
+    - Actualizar `app/busqueda.tsx`: reemplazar `Colors` por `useTheme()` y aplicar colores dinámicos en barra de búsqueda, resultados y mensaje de estado vacío
+    - _Requirements: 11.6, 11.7, 11.8, 11.9_
+
+- [ ] 15. Checkpoint — Verificar sistema de temas
+  - Asegurarse de que todos los tests del sistema de temas pasan (theme.test.ts, ThemeProvider.test.tsx, property tests 17 y 18). Consultar al usuario si surgen dudas.
+
 ## Notas
 
 - Las tareas marcadas con `*` son opcionales y pueden omitirse para un MVP más rápido
@@ -403,7 +471,12 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     { "id": 5, "tasks": ["7.3", "8.1"] },
     { "id": 6, "tasks": ["8.2", "8.3", "8.4", "9.1", "9.2"] },
     { "id": 7, "tasks": ["9.3", "9.4", "11.1", "12.1", "12.2"] },
-    { "id": 8, "tasks": ["11.2", "12.3", "12.4", "12.5"] }
+    { "id": 8, "tasks": ["11.2", "12.3", "12.4", "12.5"] },
+    { "id": 9, "tasks": ["14.1"] },
+    { "id": 10, "tasks": ["14.2", "14.3", "14.4", "14.5"] },
+    { "id": 11, "tasks": ["14.6"] },
+    { "id": 12, "tasks": ["14.7", "14.8"] },
+    { "id": 13, "tasks": ["15"] }
   ]
 }
 ```

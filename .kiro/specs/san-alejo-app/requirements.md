@@ -19,6 +19,10 @@ San Alejo es una aplicación móvil desarrollada en Expo (React Native) con alma
 - **Foto_Objeto**: Imagen opcional asociada a un Objeto, almacenada como archivo en el sistema de archivos del dispositivo. Su ruta local se persiste en la columna `foto_uri` de la tabla `objeto`.
 - **FileSystem**: Módulo `expo-file-system` utilizado para leer, escribir y eliminar archivos de imagen en el directorio persistente de la App (`FileSystem.documentDirectory + 'images/'`).
 - **ImagePicker**: Módulo `expo-image-picker` utilizado para que el usuario capture una foto con la cámara del dispositivo o seleccione una imagen de la galería.
+- **Tema**: Conjunto de tokens de color (fondos, textos, bordes, acentos) que define la apariencia visual de la App. Existen dos variantes: `dark` y `light`.
+- **Esquema_Sistema**: Preferencia de apariencia configurada por el usuario en el sistema operativo del dispositivo. Puede ser `dark` o `light`. Se lee mediante el hook `useColorScheme` de React Native.
+- **ThemeProvider**: Componente de contexto React que expone el Tema activo a todos los componentes descendientes de la App.
+- **useTheme**: Hook personalizado que permite a cualquier componente acceder al Tema activo sin recibir props adicionales.
 
 ---
 
@@ -181,3 +185,26 @@ San Alejo es una aplicación móvil desarrollada en Expo (React Native) con alma
 10. WHEN el usuario confirma la eliminación de un Contenedor, THE FileSystem SHALL eliminar todos los archivos de imagen referenciados por los `foto_uri` no nulos de los Objetos pertenecientes a ese Contenedor antes de que THE Base_de_Datos elimine el registro de la tabla `contenedor`.
 11. IF el ImagePicker no obtiene permiso para acceder a la cámara o a la galería, THEN THE App SHALL mostrar un mensaje informando al usuario que debe conceder el permiso correspondiente en la configuración del dispositivo.
 12. IF el FileSystem falla al copiar, leer o eliminar un archivo de imagen, THEN THE App SHALL mostrar un mensaje de error indicando que no se pudo procesar la foto, sin interrumpir la operación principal sobre el Objeto o el Contenedor.
+
+---
+
+### Requirement 11: Soporte de modo oscuro y claro automático
+
+**User Story:** Como usuario, quiero que la app detecte automáticamente si mi dispositivo está en modo oscuro o claro y aplique los colores correspondientes en toda la interfaz, para que la experiencia visual sea coherente con el resto de mis aplicaciones.
+
+#### Acceptance Criteria
+
+1. WHEN la App se inicia, THE ThemeProvider SHALL leer el Esquema_Sistema mediante `useColorScheme` y seleccionar el Tema `dark` si el Esquema_Sistema es `dark`, o el Tema `light` si el Esquema_Sistema es `light` o no está definido.
+2. WHEN el Esquema_Sistema cambia mientras la App está en ejecución, THE ThemeProvider SHALL actualizar el Tema activo en menos de 500 ms sin requerir reinicio de la App.
+3. THE ThemeProvider SHALL exponer el Tema activo a todos los componentes de la App mediante un contexto React accesible a través del hook `useTheme`.
+4. WHILE el Tema activo es `dark`, THE App SHALL aplicar la paleta de colores oscura definida en `src/theme.ts` (fondos `#0F172A`/`#1E293B`/`#273549`, textos `#F1F5F9`/`#94A3B8`).
+5. WHILE el Tema activo es `light`, THE App SHALL aplicar una paleta de colores clara con fondos de alta luminosidad (mínimo `#F8FAFC` para el fondo base) y textos de alta legibilidad (mínimo contraste 4.5:1 respecto al fondo según WCAG AA).
+6. WHEN el Tema activo cambia, THE Lista_Contenedores SHALL actualizar los colores de fondo, texto y bordes de todos sus elementos visibles para reflejar el nuevo Tema sin requerir navegación.
+7. WHEN el Tema activo cambia, THE Detalle_Contenedor SHALL actualizar los colores de fondo, texto y bordes de todos sus elementos visibles para reflejar el nuevo Tema sin requerir navegación.
+8. WHEN el Tema activo cambia, THE Formulario_Contenedor SHALL actualizar los colores de fondo, texto, bordes e inputs para reflejar el nuevo Tema sin requerir navegación.
+9. WHEN el Tema activo cambia, THE Formulario_Objeto SHALL actualizar los colores de fondo, texto, bordes e inputs para reflejar el nuevo Tema sin requerir navegación.
+10. WHEN el Tema activo es `dark`, THE App SHALL configurar el componente `StatusBar` con estilo `light-content`.
+11. WHEN el Tema activo es `light`, THE App SHALL configurar el componente `StatusBar` con estilo `dark-content`.
+12. WHEN el Tema activo cambia, THE Navegador SHALL actualizar los colores de la cabecera de navegación (`headerStyle`, `headerTintColor`, `headerTitleStyle`) para reflejar el nuevo Tema.
+13. THE App SHALL mantener el color de acento índigo (`#6366F1`) como color primario de interacción en ambos temas, ajustando únicamente su opacidad o luminosidad cuando sea necesario para garantizar contraste suficiente sobre el fondo del Tema activo.
+14. IF el Esquema_Sistema no puede determinarse (valor `null` o `undefined`), THEN THE ThemeProvider SHALL aplicar el Tema `light` como valor por defecto.

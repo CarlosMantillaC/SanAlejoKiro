@@ -67,9 +67,12 @@ src/
 │   ├── schema.ts            ← DDL: CREATE TABLE statements + migraciones
 │   ├── contenedorRepository.ts
 │   └── objetoRepository.ts
+├── context/
+│   └── ThemeContext.tsx     ← ThemeProvider + useTheme hook
 ├── utils/
 │   ├── validator.ts         ← Validación de campos
 │   └── imageStorage.ts      ← Copia y eliminación de archivos de imagen
+├── theme.ts                 ← Paletas dark/light, tokens compartidos, resolveTheme
 └── components/
     ├── ContenedorItem.tsx
     ├── ObjetoItem.tsx
@@ -590,6 +593,306 @@ export async function initializeDatabase(db: SQLiteDatabase): Promise<void> {
 
 ---
 
+## Theme System (Requirement 11)
+
+### Overview del sistema de temas
+
+El sistema de temas permite que la app detecte automáticamente el esquema de color del dispositivo (`dark` o `light`) y aplique la paleta correspondiente a todos los componentes sin requerir reinicio. Se basa en tres piezas:
+
+1. **`src/theme.ts`** — Paletas de color `dark` y `light` + tokens compartidos (tipografía, espaciado, radios, sombras)
+2. **`src/context/ThemeContext.tsx`** — `ThemeProvider` y hook `useTheme`
+3. **`app/_layout.tsx`** — Integración de `ThemeProvider` con `useColorScheme` y `SQLiteProvider`
+
+### Decisiones de diseño
+
+- **Dark-first preservado**: Los tokens actuales de `Colors` se convierten en la paleta `dark`. No se rompe ningún código existente que importe `Colors` directamente (se mantiene como alias de `darkColors` para compatibilidad durante la migración).
+- **Contexto React puro**: Se usa `React.createContext` + `useColorScheme` de React Native. No se introduce ninguna librería de theming externa.
+- **Tokens compartidos**: `Typography`, `Radii`, `Spacing` y `Shadows` son independientes del tema y no se duplican.
+- **Acento índigo invariante**: `#6366F1` se mantiene igual en ambos temas. Solo se ajusta la opacidad en superficies donde el contraste lo requiera.
+- **Fallback a `light`**: Si `useColorScheme` retorna `null` o `undefined`, se aplica el tema `light`.
+
+### Interfaces TypeScript
+
+```typescript
+// src/theme.ts
+
+/** Paleta de colores para un tema (dark o light) */
+export interface ThemeColors {
+  // Fondos
+  bgBase: string;
+  bgSurface: string;
+  bgElevated: string;
+  bgMuted: string;
+
+  // Acento — Indigo (invariante entre temas)
+  accent: string;
+  accentLight: string;
+  accentDark: string;
+  accentMuted: string;
+
+  // Semánticos
+  danger: string;
+  dangerMuted: string;
+  dangerDark: string;
+  success: string;
+  warning: string;
+
+  // Texto
+  textPrimary: string;
+  textSecondary: string;
+  textMuted: string;
+  textOnAccent: string;
+  textOnDanger: string;
+
+  // Bordes
+  border: string;
+  borderSubtle: string;
+  borderFocus: string;
+
+  // Overlay
+  overlay: string;
+}
+
+/** Variante de tema: oscuro o claro */
+export type ColorScheme = 'dark' | 'light';
+
+/** Objeto de tema completo expuesto por useTheme */
+export interface Theme {
+  colors: ThemeColors;
+  scheme: ColorScheme;
+}
+```
+
+### Paletas de color
+
+```typescript
+// src/theme.ts
+
+export const darkColors: ThemeColors = {
+  // Fondos
+  bgBase: '#0F172A',
+  bgSurface: '#1E293B',
+  bgElevated: '#273549',
+  bgMuted: '#334155',
+
+  // Acento
+  accent: '#6366F1',
+  accentLight: '#818CF8',
+  accentDark: '#4F46E5',
+  accentMuted: 'rgba(99,102,241,0.15)',
+
+  // Semánticos
+  danger: '#EF4444',
+  dangerMuted: 'rgba(239,68,68,0.15)',
+  dangerDark: '#DC2626',
+  success: '#22C55E',
+  warning: '#F59E0B',
+
+  // Texto
+  textPrimary: '#F1F5F9',
+  textSecondary: '#94A3B8',
+  textMuted: '#64748B',
+  textOnAccent: '#FFFFFF',
+  textOnDanger: '#FFFFFF',
+
+  // Bordes
+  border: '#1E293B',
+  borderSubtle: 'rgba(255,255,255,0.06)',
+  borderFocus: '#6366F1',
+
+  // Overlay
+  overlay: 'rgba(0,0,0,0.65)',
+};
+
+export const lightColors: ThemeColors = {
+  // Fondos (alta luminosidad, mínimo #F8FAFC para bgBase)
+  bgBase: '#F8FAFC',
+  bgSurface: '#FFFFFF',
+  bgElevated: '#F1F5F9',
+  bgMuted: '#E2E8F0',
+
+  // Acento (invariante)
+  accent: '#6366F1',
+  accentLight: '#818CF8',
+  accentDark: '#4F46E5',
+  accentMuted: 'rgba(99,102,241,0.12)',
+
+  // Semánticos
+  danger: '#DC2626',
+  dangerMuted: 'rgba(220,38,38,0.10)',
+  dangerDark: '#B91C1C',
+  success: '#16A34A',
+  warning: '#D97706',
+
+  // Texto (contraste ≥ 4.5:1 sobre fondos light según WCAG AA)
+  textPrimary: '#0F172A',   // contraste ~17:1 sobre #F8FAFC
+  textSecondary: '#475569', // contraste ~5.9:1 sobre #F8FAFC
+  textMuted: '#64748B',     // contraste ~4.6:1 sobre #F8FAFC
+  textOnAccent: '#FFFFFF',
+  textOnDanger: '#FFFFFF',
+
+  // Bordes
+  border: '#E2E8F0',
+  borderSubtle: 'rgba(0,0,0,0.06)',
+  borderFocus: '#6366F1',
+
+  // Overlay
+  overlay: 'rgba(0,0,0,0.45)',
+};
+
+// Alias de compatibilidad (dark-first, para código existente)
+export const Colors = darkColors;
+
+export const darkTheme: Theme = { colors: darkColors, scheme: 'dark' };
+export const lightTheme: Theme = { colors: lightColors, scheme: 'light' };
+
+/** Selecciona el tema según el esquema del sistema. Fallback: light. */
+export function resolveTheme(colorScheme: string | null | undefined): Theme {
+  return colorScheme === 'dark' ? darkTheme : lightTheme;
+}
+```
+
+### ThemeContext (`src/context/ThemeContext.tsx`)
+
+```typescript
+import React, { createContext, useContext } from 'react';
+import { useColorScheme } from 'react-native';
+import { Theme, resolveTheme } from '../theme';
+
+const ThemeContext = createContext<Theme | undefined>(undefined);
+
+/** Provee el tema activo a todos los componentes descendientes. */
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const colorScheme = useColorScheme();
+  const theme = resolveTheme(colorScheme);
+
+  return (
+    <ThemeContext.Provider value={theme}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+/**
+ * Hook para acceder al tema activo desde cualquier componente.
+ * Debe usarse dentro del árbol de ThemeProvider.
+ */
+export function useTheme(): Theme {
+  const theme = useContext(ThemeContext);
+  if (theme === undefined) {
+    throw new Error('useTheme debe usarse dentro de ThemeProvider');
+  }
+  return theme;
+}
+```
+
+### Root Layout actualizado (`app/_layout.tsx`)
+
+```typescript
+import { SQLiteProvider } from 'expo-sqlite';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { Suspense } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { initializeDatabase } from '../src/db/schema';
+import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
+import { Typography } from '../src/theme';
+
+function AppNavigator() {
+  const { colors, scheme } = useTheme();
+
+  return (
+    <>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.bgSurface },
+          headerTintColor: colors.textPrimary,
+          headerTitleStyle: {
+            color: colors.textPrimary,
+            fontWeight: Typography.semibold,
+            fontSize: Typography.md,
+          },
+          contentStyle: { backgroundColor: colors.bgBase },
+          headerShadowVisible: false,
+        }}
+      />
+    </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <Suspense fallback={<View><ActivityIndicator /></View>}>
+        <SQLiteProvider
+          databaseName="san-alejo.db"
+          onInit={initializeDatabase}
+          useSuspense
+        >
+          <AppNavigator />
+        </SQLiteProvider>
+      </Suspense>
+    </ThemeProvider>
+  );
+}
+```
+
+> **Nota**: `AppNavigator` es un componente separado para poder llamar `useTheme()` dentro del árbol de `ThemeProvider`. El `ThemeProvider` envuelve todo, incluyendo `SQLiteProvider`, para que los componentes de pantalla puedan acceder al tema sin importar su posición en el árbol.
+
+### Patrón de uso en componentes
+
+Todos los componentes y pantallas reemplazan las referencias estáticas a `Colors` por el hook `useTheme`:
+
+```typescript
+// Antes (hardcoded dark)
+import { Colors } from '../theme';
+const styles = StyleSheet.create({
+  card: { backgroundColor: Colors.bgSurface },
+});
+
+// Después (theme-aware)
+import { useTheme } from '../context/ThemeContext';
+
+export function MiComponente() {
+  const { colors } = useTheme();
+  return <View style={{ backgroundColor: colors.bgSurface }} />;
+}
+```
+
+Para componentes con estilos complejos, se recomienda calcular los estilos dentro del componente usando `useMemo` o directamente en el render:
+
+```typescript
+export function ContenedorItem({ contenedor, onPress, onDelete }: ContenedorItemProps) {
+  const { colors } = useTheme();
+
+  return (
+    <View style={[styles.card, { backgroundColor: colors.bgSurface }]}>
+      {/* ... */}
+    </View>
+  );
+}
+```
+
+### Diagrama de flujo del sistema de temas
+
+```mermaid
+graph TD
+    OS[Sistema Operativo] -->|useColorScheme| UC[useColorScheme hook]
+    UC -->|'dark' | 'light' | null| TP[ThemeProvider]
+    TP -->|resolveTheme| TH[Theme activo]
+    TH -->|ThemeContext.Provider| CTX[React Context]
+    CTX -->|useTheme| C1[Lista_Contenedores]
+    CTX -->|useTheme| C2[Detalle_Contenedor]
+    CTX -->|useTheme| C3[Formulario_Contenedor]
+    CTX -->|useTheme| C4[Formulario_Objeto]
+    CTX -->|useTheme| C5[Componentes reutilizables]
+    CTX -->|scheme| SB[StatusBar style]
+    CTX -->|colors| NAV[Stack header colors]
+```
+
+---
+
 ## Correctness Properties
 
 *Una propiedad es una característica o comportamiento que debe mantenerse verdadero en todas las ejecuciones válidas del sistema — esencialmente, una declaración formal sobre lo que el sistema debe hacer. Las propiedades sirven como puente entre las especificaciones legibles por humanos y las garantías de corrección verificables por máquinas.*
@@ -722,6 +1025,22 @@ export async function initializeDatabase(db: SQLiteDatabase): Promise<void> {
 
 ---
 
+### Property 17: Contraste WCAG AA en el tema light
+
+*Para cualquier* par (color de texto, color de fondo) definido en la paleta `lightColors` de `src/theme.ts`, el ratio de contraste calculado según la fórmula WCAG 2.1 debe ser mayor o igual a 4.5:1.
+
+**Validates: Requirements 11.5**
+
+---
+
+### Property 18: Invariancia del color de acento en ambos temas
+
+*Para cualquier* tema válido (`darkTheme` o `lightTheme`), el valor de `theme.colors.accent` debe ser exactamente `'#6366F1'`.
+
+**Validates: Requirements 11.13**
+
+---
+
 ## Error Handling
 
 ### Estrategia general
@@ -829,6 +1148,7 @@ Cada test debe incluir un comentario de trazabilidad:
 - `src/db/objetoRepository.ts` — Propiedades 7, 8, 9, 10, 11, 12, 14
 - `src/utils/imageStorage.ts` — Propiedades 15, 16
 - Componentes de formulario — Propiedad 13
+- `src/theme.ts` — Propiedades 17, 18
 
 **Ejemplo de test de propiedad:**
 
@@ -888,6 +1208,101 @@ test('insertar y consultar contenedor retorna los mismos valores', async () => {
 });
 ```
 
+**Ejemplo de test de propiedad para el sistema de temas:**
+
+```typescript
+import fc from 'fast-check';
+import { darkTheme, lightTheme, Theme } from '../src/theme';
+
+// Función auxiliar para calcular luminancia relativa WCAG
+function relativeLuminance(hex: string): number {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const toLinear = (c: number) => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+}
+
+function contrastRatio(hex1: string, hex2: string): number {
+  const l1 = relativeLuminance(hex1);
+  const l2 = relativeLuminance(hex2);
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+// Feature: dark-mode-support, Property 17: Contraste WCAG AA en el tema light
+test('todos los pares texto/fondo del tema light tienen contraste ≥ 4.5:1', () => {
+  const { colors } = lightTheme;
+  const textColors = [colors.textPrimary, colors.textSecondary, colors.textMuted];
+  const bgColors = [colors.bgBase, colors.bgSurface, colors.bgElevated];
+
+  for (const text of textColors) {
+    for (const bg of bgColors) {
+      const ratio = contrastRatio(text, bg);
+      expect(ratio).toBeGreaterThanOrEqual(4.5);
+    }
+  }
+});
+
+// Feature: dark-mode-support, Property 18: Invariancia del color de acento
+test('el color de acento es #6366F1 en ambos temas', () => {
+  const themes: Theme[] = [darkTheme, lightTheme];
+  fc.assert(
+    fc.property(
+      fc.constantFrom(...themes),
+      (theme) => theme.colors.accent === '#6366F1'
+    ),
+    { numRuns: 100 }
+  );
+});
+```
+
+### Pruebas de ejemplo para el sistema de temas
+
+```typescript
+import { render } from '@testing-library/react-native';
+import { Text } from 'react-native';
+import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
+import { resolveTheme, darkTheme, lightTheme } from '../src/theme';
+
+// 11.1 y 11.14: Selección de tema según esquema del sistema
+describe('resolveTheme', () => {
+  test('retorna darkTheme cuando colorScheme es "dark"', () => {
+    expect(resolveTheme('dark')).toBe(darkTheme);
+  });
+  test('retorna lightTheme cuando colorScheme es "light"', () => {
+    expect(resolveTheme('light')).toBe(lightTheme);
+  });
+  test('retorna lightTheme cuando colorScheme es null (fallback)', () => {
+    expect(resolveTheme(null)).toBe(lightTheme);
+  });
+  test('retorna lightTheme cuando colorScheme es undefined (fallback)', () => {
+    expect(resolveTheme(undefined)).toBe(lightTheme);
+  });
+});
+
+// 11.3: ThemeProvider expone el tema mediante useTheme
+test('useTheme retorna el tema activo dentro de ThemeProvider', () => {
+  let capturedTheme: ReturnType<typeof useTheme> | null = null;
+  function Consumer() {
+    capturedTheme = useTheme();
+    return <Text>{capturedTheme.scheme}</Text>;
+  }
+  render(<ThemeProvider><Consumer /></ThemeProvider>);
+  expect(capturedTheme).not.toBeNull();
+  expect(['dark', 'light']).toContain(capturedTheme!.scheme);
+});
+
+// 11.10 y 11.11: StatusBar style según tema
+test('getStatusBarStyle retorna "light" para tema dark', () => {
+  expect(darkTheme.scheme === 'dark' ? 'light' : 'dark').toBe('light');
+});
+test('getStatusBarStyle retorna "dark" para tema light', () => {
+  expect(lightTheme.scheme === 'dark' ? 'light' : 'dark').toBe('dark');
+});
+```
+
 ### Pruebas de ejemplo (unit tests)
 
 Se usan para casos específicos que no son universales:
@@ -911,12 +1326,14 @@ __tests__/
 │   ├── validator.test.ts
 │   ├── contenedorRepository.test.ts
 │   ├── objetoRepository.test.ts
-│   └── imageStorage.test.ts        ← Propiedades 15, 16 (con mocks de expo-file-system)
+│   ├── imageStorage.test.ts        ← Propiedades 15, 16 (con mocks de expo-file-system)
+│   └── theme.test.ts               ← Propiedades 17, 18 + ejemplos de resolveTheme
 ├── components/
 │   ├── ContenedorItem.test.tsx
 │   ├── ObjetoItem.test.tsx
 │   ├── ConfirmDialog.test.tsx
-│   └── ImagePickerButton.test.tsx  ← Tests de permisos y selección de imagen
+│   ├── ImagePickerButton.test.tsx  ← Tests de permisos y selección de imagen
+│   └── ThemeProvider.test.tsx      ← Tests de useTheme, ThemeProvider, fallback
 ├── screens/
 │   ├── ListaContenedores.test.tsx
 │   ├── DetalleContenedor.test.tsx
