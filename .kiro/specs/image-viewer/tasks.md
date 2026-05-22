@@ -46,32 +46,32 @@ Implementación incremental de un visor de imagen reutilizable a pantalla comple
 		- Confirmar que el overlay del visor no rompe el layout del detalle
 		- _Requirements: 2.2, 2.4, 6.1, 6.2, 6.3, 6.4_
 
-- [ ] 3. Integrar el visor en el formulario de objeto
-	- [ ] 3.1 Actualizar `src/components/ImagePickerButton.tsx`
+- [x] 3. Integrar el visor en el formulario de objeto
+	- [x] 3.1 Actualizar `src/components/ImagePickerButton.tsx`
 		- Hacer que la vista previa se pueda tocar cuando `currentUri` exista
 		- Conservar el comportamiento actual de selección/captura de imagen
 		- _Requirements: 1.2, 1.3_
 
-	- [ ] 3.2 Actualizar `app/contenedor/objeto/nuevo.tsx`
+	- [x] 3.2 Actualizar `app/contenedor/objeto/nuevo.tsx`
 		- Agregar estado local para abrir `ImageViewer` desde la vista previa
 		- Abrir el visor tanto en modo creación como en edición si hay imagen
 		- Mantener intacto el flujo de guardado del formulario
 		- _Requirements: 1.3, 5.1_
 
-	- [ ] 3.3 Actualizar `app/contenedor/objeto/editar/[id].tsx`
+	- [x] 3.3 Actualizar `app/contenedor/objeto/editar/[id].tsx`
 		- Agregar estado local para abrir `ImageViewer` desde la vista previa
 		- Abrir el visor con la imagen precargada del objeto
 		- Cerrar el visor sin alterar la imagen seleccionada ni el resto del formulario
 		- _Requirements: 1.2, 1.3, 3.4_
 
-- [ ] 4. Asegurar soporte visual y de accesibilidad
-	- [ ] 4.1 Verificar contraste y tema en `ImageViewer`
+- [x] 4. Asegurar soporte visual y de accesibilidad
+	- [x] 4.1 Verificar contraste y tema en `ImageViewer`
 		- Usar `colors.overlay` para dark y light según `useTheme()`
 		- Usar `textOnAccent` para el icono de cierre
 		- Actualizar colores en caliente si cambia el tema mientras el visor está abierto
 		- _Requirements: 2.4, 6.1, 6.2, 6.3, 6.4_
 
-	- [ ] 4.2 Verificar accesibilidad del componente
+	- [x] 4.2 Verificar accesibilidad del componente
 		- Mantener una `accessibilityLabel` descriptiva para la imagen
 		- Confirmar que el botón de cierre sea accesible con lector de pantalla
 		- Confirmar que el modal bloquee la interacción con la pantalla subyacente

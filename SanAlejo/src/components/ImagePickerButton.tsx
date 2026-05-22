@@ -8,9 +8,10 @@ interface ImagePickerButtonProps {
   currentUri: string | null;
   onImageSelected: (uri: string) => void;
   onPermissionDenied: () => void;
+  onPreviewPress?: () => void;
 }
 
-export function ImagePickerButton({ currentUri, onImageSelected, onPermissionDenied }: ImagePickerButtonProps) {
+export function ImagePickerButton({ currentUri, onImageSelected, onPermissionDenied, onPreviewPress }: ImagePickerButtonProps) {
   const { colors } = useTheme();
 
   async function handleCamera() {
@@ -38,11 +39,26 @@ export function ImagePickerButton({ currentUri, onImageSelected, onPermissionDen
   return (
     <View style={styles.container}>
       {currentUri ? (
-        <Image
-          source={{ uri: currentUri }}
-          style={[styles.preview, { borderColor: colors.borderSubtle }]}
-          accessibilityLabel="Vista previa de la foto del objeto"
-        />
+        onPreviewPress ? (
+          <Pressable
+            onPress={onPreviewPress}
+            accessibilityRole="button"
+            accessibilityLabel="Ver foto del objeto"
+            style={({ pressed }) => [pressed && styles.previewPressed]}
+          >
+            <Image
+              source={{ uri: currentUri }}
+              style={[styles.preview, { borderColor: colors.borderSubtle }]}
+              accessibilityLabel="Vista previa de la foto del objeto"
+            />
+          </Pressable>
+        ) : (
+          <Image
+            source={{ uri: currentUri }}
+            style={[styles.preview, { borderColor: colors.borderSubtle }]}
+            accessibilityLabel="Vista previa de la foto del objeto"
+          />
+        )
       ) : (
         <View
           style={[
@@ -98,6 +114,9 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: Radii.md,
     borderWidth: 1,
+  },
+  previewPressed: {
+    opacity: 0.85,
   },
   placeholder: {
     width: 120,

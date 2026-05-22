@@ -17,6 +17,7 @@ import { insertObjeto } from '../../../src/db/objetoRepository';
 import { copyImageToStorage } from '../../../src/utils/imageStorage';
 import { validateFields } from '../../../src/utils/validator';
 import { ImagePickerButton } from '../../../src/components/ImagePickerButton';
+import { ImageViewer } from '../../../src/components/ImageViewer';
 import { Radii, Spacing, Typography } from '../../../src/theme';
 import { useTheme } from '../../../src/context/ThemeContext';
 
@@ -28,6 +29,7 @@ export default function NuevoObjeto() {
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [fotoUri, setFotoUri] = useState<string | null>(null);
+  const [imageViewerVisible, setImageViewerVisible] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [dbError, setDbError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -128,9 +130,16 @@ export default function NuevoObjeto() {
               currentUri={fotoUri}
               onImageSelected={handleImageSelected}
               onPermissionDenied={handlePermissionDenied}
+              onPreviewPress={fotoUri !== null ? () => setImageViewerVisible(true) : undefined}
             />
           </View>
         </View>
+
+        <ImageViewer
+          uri={fotoUri ?? ''}
+          visible={imageViewerVisible && fotoUri !== null}
+          onClose={() => setImageViewerVisible(false)}
+        />
 
         <Pressable
           style={({ pressed }) => [

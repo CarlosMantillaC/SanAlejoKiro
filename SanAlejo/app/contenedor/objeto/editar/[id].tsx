@@ -17,6 +17,7 @@ import { getObjetoById, updateObjeto } from '../../../../src/db/objetoRepository
 import { copyImageToStorage, deleteImageFromStorage } from '../../../../src/utils/imageStorage';
 import { validateFields } from '../../../../src/utils/validator';
 import { ImagePickerButton } from '../../../../src/components/ImagePickerButton';
+import { ImageViewer } from '../../../../src/components/ImageViewer';
 import { Radii, Spacing, Typography } from '../../../../src/theme';
 import { useTheme } from '../../../../src/context/ThemeContext';
 
@@ -32,6 +33,7 @@ export default function EditarObjeto() {
   const [dbError, setDbError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [imageViewerVisible, setImageViewerVisible] = useState(false);
 
   function clearError(key: string) {
     if (errors[key]) {
@@ -156,9 +158,16 @@ export default function EditarObjeto() {
               currentUri={fotoUri}
               onImageSelected={handleImageSelected}
               onPermissionDenied={handlePermissionDenied}
+              onPreviewPress={fotoUri !== null ? () => setImageViewerVisible(true) : undefined}
             />
           </View>
         </View>
+
+        <ImageViewer
+          uri={fotoUri ?? ''}
+          visible={imageViewerVisible && fotoUri !== null}
+          onClose={() => setImageViewerVisible(false)}
+        />
 
         <Pressable
           style={({ pressed }) => [

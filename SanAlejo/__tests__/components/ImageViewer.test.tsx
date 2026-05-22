@@ -45,7 +45,7 @@ describe('ImageViewer', () => {
     );
 
     expect(screen.getByTestId('image-viewer-overlay')).toBeTruthy();
-    expect(screen.getByLabelText('Cerrar visor de imagen')).toBeTruthy();
+    expect(screen.getByLabelText('Cerrar visor de imagen').props.accessibilityRole).toBe('button');
     expect(screen.getByLabelText('Vista ampliada de la imagen')).toBeTruthy();
   });
 
@@ -110,5 +110,15 @@ describe('ImageViewer', () => {
     expect(screen.getByTestId('image-viewer-overlay')).toHaveStyle({
       backgroundColor: 'rgba(0,0,0,0.45)',
     });
+  });
+
+  it('mantiene una etiqueta accesible descriptiva para la imagen', () => {
+    renderWithTheme(
+      <ImageViewer uri="file:///foto.jpg" visible onClose={jest.fn()} />
+    );
+
+    expect(screen.getByLabelText('Vista ampliada de la imagen').props.accessibilityLabel).toBe(
+      'Vista ampliada de la imagen'
+    );
   });
 });
