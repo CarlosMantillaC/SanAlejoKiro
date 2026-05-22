@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
 import { getObjetoById, updateObjeto } from '../../../../src/db/objetoRepository';
 import { copyImageToStorage, deleteImageFromStorage } from '../../../../src/utils/imageStorage';
@@ -98,7 +99,8 @@ export default function EditarObjeto() {
 
         {dbError ? (
           <View style={styles.errorBanner}>
-            <Text style={styles.errorBannerText}>⚠️  {dbError}</Text>
+            <Ionicons name="warning-outline" size={14} color={Colors.danger} />
+            <Text style={styles.errorBannerText}>{dbError}</Text>
           </View>
         ) : null}
 
@@ -171,6 +173,9 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.bgBase },
   scroll: { padding: Spacing.lg, paddingBottom: 48 },
   errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
     backgroundColor: Colors.dangerMuted,
     borderLeftWidth: 3,
     borderLeftColor: Colors.danger,

@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Contenedor } from '../db/contenedorRepository';
 import { Colors, Radii, Shadows, Spacing, Typography } from '../theme';
 
@@ -25,7 +26,7 @@ export function ContenedorItem({ contenedor, onPress, onDelete }: ContenedorItem
           <Text style={styles.descripcion} numberOfLines={2}>{contenedor.descripcion}</Text>
         ) : null}
         <View style={styles.ubicacionRow}>
-          <Text style={styles.ubicacionIcon}>📍</Text>
+          <Ionicons name="location-outline" size={12} color={Colors.textMuted} />
           <Text style={styles.ubicacion} numberOfLines={1}>{contenedor.ubicacion}</Text>
         </View>
       </Pressable>
@@ -37,7 +38,7 @@ export function ContenedorItem({ contenedor, onPress, onDelete }: ContenedorItem
         accessibilityLabel={`Eliminar contenedor ${contenedor.nombre}`}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <Text style={styles.deleteIcon}>🗑</Text>
+        <Ionicons name="trash-outline" size={18} color={Colors.textMuted} />
       </Pressable>
     </View>
   );
@@ -86,9 +87,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 3,
   },
-  ubicacionIcon: {
-    fontSize: 11,
-  },
   ubicacion: {
     fontSize: Typography.xs,
     color: Colors.textMuted,
@@ -104,8 +102,5 @@ const styles = StyleSheet.create({
   },
   deleteButtonPressed: {
     backgroundColor: Colors.dangerMuted,
-  },
-  deleteIcon: {
-    fontSize: 18,
   },
 });

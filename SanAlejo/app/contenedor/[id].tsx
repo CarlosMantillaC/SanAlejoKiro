@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
 import { Contenedor, getContenedorById } from '../../src/db/contenedorRepository';
 import { Objeto, getObjetosByContenedor, deleteObjeto } from '../../src/db/objetoRepository';
@@ -103,7 +104,7 @@ export default function DetalleContenedor() {
                 ) : null}
                 {contenedor.ubicacion ? (
                   <View style={styles.ubicacionRow}>
-                    <Text style={styles.ubicacionIcon}>📍</Text>
+                    <Ionicons name="location-outline" size={13} color={Colors.textMuted} />
                     <Text style={styles.ubicacionText}>{contenedor.ubicacion}</Text>
                   </View>
                 ) : null}
@@ -129,7 +130,7 @@ export default function DetalleContenedor() {
             )}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyEmoji}>🗃️</Text>
+                <Ionicons name="archive-outline" size={48} color={Colors.textMuted} style={styles.emptyIcon} />
                 <Text style={styles.emptyTitle}>Contenedor vacío</Text>
                 <Text style={styles.emptySubtitle}>
                   Agrega los objetos que hay dentro.
@@ -228,9 +229,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  ubicacionIcon: {
-    fontSize: 12,
-  },
   ubicacionText: {
     fontSize: Typography.sm,
     color: Colors.textMuted,
@@ -258,8 +256,7 @@ const styles = StyleSheet.create({
     paddingTop: 48,
     gap: Spacing.sm,
   },
-  emptyEmoji: {
-    fontSize: 48,
+  emptyIcon: {
     marginBottom: Spacing.sm,
   },
   emptyTitle: {

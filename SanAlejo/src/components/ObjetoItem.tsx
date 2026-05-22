@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Objeto } from '../db/objetoRepository';
 import { Colors, Radii, Spacing, Typography } from '../theme';
 
@@ -20,7 +21,7 @@ export function ObjetoItem({ objeto, onEdit, onDelete }: ObjetoItemProps) {
         />
       ) : (
         <View style={styles.fotoPlaceholder}>
-          <Text style={styles.fotoPlaceholderIcon}>📦</Text>
+          <Ionicons name="cube-outline" size={24} color={Colors.textMuted} />
         </View>
       )}
 
@@ -38,7 +39,7 @@ export function ObjetoItem({ objeto, onEdit, onDelete }: ObjetoItemProps) {
           accessibilityRole="button"
           accessibilityLabel={`Editar ${objeto.nombre}`}
         >
-          <Text style={styles.editBtnText}>Editar</Text>
+          <Ionicons name="pencil-outline" size={15} color={Colors.accentLight} />
         </Pressable>
         <Pressable
           style={({ pressed }) => [styles.deleteBtn, pressed && styles.deleteBtnPressed]}
@@ -46,7 +47,7 @@ export function ObjetoItem({ objeto, onEdit, onDelete }: ObjetoItemProps) {
           accessibilityRole="button"
           accessibilityLabel={`Eliminar ${objeto.nombre}`}
         >
-          <Text style={styles.deleteBtnText}>Eliminar</Text>
+          <Ionicons name="trash-outline" size={15} color={Colors.danger} />
         </Pressable>
       </View>
     </View>
@@ -78,9 +79,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: Spacing.md,
   },
-  fotoPlaceholderIcon: {
-    fontSize: 22,
-  },
   textContainer: {
     flex: 1,
     marginRight: Spacing.sm,
@@ -101,32 +99,24 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   editBtn: {
-    paddingVertical: 5,
-    paddingHorizontal: Spacing.md,
+    padding: Spacing.sm,
     borderRadius: Radii.sm,
     borderWidth: 1,
     borderColor: Colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   editBtnPressed: {
     backgroundColor: Colors.accentMuted,
   },
-  editBtnText: {
-    fontSize: Typography.sm,
-    color: Colors.accentLight,
-    fontWeight: Typography.medium,
-  },
   deleteBtn: {
-    paddingVertical: 5,
-    paddingHorizontal: Spacing.md,
+    padding: Spacing.sm,
     borderRadius: Radii.sm,
     backgroundColor: Colors.dangerMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   deleteBtnPressed: {
     backgroundColor: Colors.danger,
-  },
-  deleteBtnText: {
-    fontSize: Typography.sm,
-    color: Colors.danger,
-    fontWeight: Typography.medium,
   },
 });

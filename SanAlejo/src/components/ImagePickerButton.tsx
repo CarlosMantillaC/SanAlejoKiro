@@ -1,5 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { Image, Pressable, Text, View, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radii, Spacing, Typography } from '../theme';
 
 interface ImagePickerButtonProps {
@@ -41,7 +42,7 @@ export function ImagePickerButton({ currentUri, onImageSelected, onPermissionDen
         />
       ) : (
         <View style={styles.placeholder}>
-          <Text style={styles.placeholderIcon}>📷</Text>
+          <Ionicons name="camera-outline" size={28} color={Colors.textMuted} />
           <Text style={styles.placeholderText}>Sin foto</Text>
         </View>
       )}
@@ -53,7 +54,8 @@ export function ImagePickerButton({ currentUri, onImageSelected, onPermissionDen
           accessibilityRole="button"
           accessibilityLabel="Tomar foto del objeto"
         >
-          <Text style={styles.btnText}>📷  Cámara</Text>
+          <Ionicons name="camera-outline" size={16} color={Colors.accentLight} />
+          <Text style={styles.btnText}>Cámara</Text>
         </Pressable>
         <Pressable
           style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
@@ -61,7 +63,8 @@ export function ImagePickerButton({ currentUri, onImageSelected, onPermissionDen
           accessibilityRole="button"
           accessibilityLabel="Seleccionar foto de galería"
         >
-          <Text style={styles.btnText}>{currentUri ? '🖼  Cambiar' : '🖼  Galería'}</Text>
+          <Ionicons name="images-outline" size={16} color={Colors.accentLight} />
+          <Text style={styles.btnText}>{currentUri ? 'Cambiar' : 'Galería'}</Text>
         </Pressable>
       </View>
     </View>
@@ -91,7 +94,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.borderSubtle,
     borderStyle: 'dashed',
   },
-  placeholderIcon: { fontSize: 28 },
   placeholderText: { fontSize: Typography.xs, color: Colors.textMuted },
   btnRow: {
     flexDirection: 'row',
@@ -99,12 +101,15 @@ const styles = StyleSheet.create({
   },
   btn: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.md,
     borderRadius: Radii.md,
     borderWidth: 1,
     borderColor: Colors.accent,
-    alignItems: 'center',
   },
   btnPressed: {
     backgroundColor: Colors.accentMuted,

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, router, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
 import { Contenedor, getAllContenedores, deleteContenedor } from '../src/db/contenedorRepository';
 import { getObjetosFotoUriByContenedor } from '../src/db/objetoRepository';
@@ -58,7 +59,7 @@ export default function ListaContenedores() {
               accessibilityRole="button"
               accessibilityLabel="Buscar objetos"
             >
-              <Text style={styles.searchIcon}>🔍</Text>
+              <Ionicons name="search-outline" size={22} color={Colors.textPrimary} />
             </Pressable>
           ),
         }}
@@ -89,7 +90,7 @@ export default function ListaContenedores() {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyEmoji}>📦</Text>
+            <Ionicons name="archive-outline" size={52} color={Colors.textMuted} style={styles.emptyIcon} />
             <Text style={styles.emptyTitle}>Sin contenedores</Text>
             <Text style={styles.emptySubtitle}>
               Agrega tu primera caja, maleta o cajón.
@@ -140,8 +141,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xxxl,
     gap: Spacing.sm,
   },
-  emptyEmoji: {
-    fontSize: 52,
+  emptyIcon: {
     marginBottom: Spacing.sm,
   },
   emptyTitle: {
@@ -173,8 +173,5 @@ const styles = StyleSheet.create({
   searchBtn: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
-  },
-  searchIcon: {
-    fontSize: 20,
   },
 });

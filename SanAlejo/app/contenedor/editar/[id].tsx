@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
 import { getContenedorById, updateContenedor } from '../../../src/db/contenedorRepository';
 import { validateFields } from '../../../src/utils/validator';
@@ -80,7 +81,8 @@ export default function EditarContenedor() {
 
         {dbError ? (
           <View style={styles.errorBanner}>
-            <Text style={styles.errorBannerText}>⚠️  {dbError}</Text>
+            <Ionicons name="warning-outline" size={14} color={Colors.danger} />
+            <Text style={styles.errorBannerText}>{dbError}</Text>
           </View>
         ) : null}
 
@@ -156,6 +158,9 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.bgBase },
   scroll: { padding: Spacing.lg, paddingBottom: 48 },
   errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
     backgroundColor: Colors.dangerMuted,
     borderLeftWidth: 3,
     borderLeftColor: Colors.danger,

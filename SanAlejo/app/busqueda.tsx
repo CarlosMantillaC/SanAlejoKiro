@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, Pressable, View } from 'react-native';
 import { Stack, router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
 import { ObjetoConContenedor, searchObjetos } from '../src/db/objetoRepository';
 import { Colors, Radii, Shadows, Spacing, Typography } from '../src/theme';
@@ -34,7 +35,7 @@ export default function Busqueda() {
 
       {/* Search bar */}
       <View style={styles.searchWrap}>
-        <Text style={styles.searchIcon}>🔍</Text>
+        <Ionicons name="search-outline" size={18} color={Colors.textMuted} style={styles.searchIconStyle} />
         <TextInput
           style={styles.searchInput}
           placeholder="Nombre o descripción del objeto…"
@@ -48,7 +49,7 @@ export default function Busqueda() {
         />
         {query.length > 0 ? (
           <Pressable onPress={() => handleChangeText('')} hitSlop={8}>
-            <Text style={styles.clearIcon}>✕</Text>
+            <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
           </Pressable>
         ) : null}
       </View>
@@ -70,8 +71,9 @@ export default function Busqueda() {
               ) : null}
             </View>
             <View style={styles.contenedorBadge}>
+              <Ionicons name="cube-outline" size={11} color={Colors.accentLight} />
               <Text style={styles.contenedorBadgeText} numberOfLines={1}>
-                📦 {item.nombre_contenedor}
+                {item.nombre_contenedor}
               </Text>
             </View>
           </Pressable>
@@ -79,7 +81,7 @@ export default function Busqueda() {
         ListEmptyComponent={
           query.trim().length > 0 && !buscando ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyEmoji}>🔎</Text>
+              <Ionicons name="search-outline" size={48} color={Colors.textMuted} style={styles.emptyIcon} />
               <Text style={styles.emptyTitle}>Sin resultados</Text>
               <Text style={styles.emptySubtitle}>
                 No se encontraron objetos con ese nombre o descripción.
@@ -112,8 +114,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.borderSubtle,
     ...Shadows.sm,
   },
-  searchIcon: {
-    fontSize: 16,
+  searchIconStyle: {
     marginRight: Spacing.sm,
   },
   searchInput: {
@@ -121,11 +122,6 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     fontSize: Typography.base,
     color: Colors.textPrimary,
-  },
-  clearIcon: {
-    fontSize: 14,
-    color: Colors.textMuted,
-    paddingLeft: Spacing.sm,
   },
   list: {
     paddingTop: Spacing.xs,
@@ -142,8 +138,7 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     gap: Spacing.sm,
   },
-  emptyEmoji: {
-    fontSize: 48,
+  emptyIcon: {
     marginBottom: Spacing.sm,
   },
   emptyTitle: {
@@ -187,6 +182,9 @@ const styles = StyleSheet.create({
   },
   contenedorBadge: {
     alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: Colors.accentMuted,
     borderRadius: Radii.full,
     paddingHorizontal: Spacing.md,

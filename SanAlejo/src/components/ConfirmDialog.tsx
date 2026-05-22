@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radii, Shadows, Spacing, Typography } from '../theme';
 
 interface ConfirmDialogProps {
@@ -21,7 +22,7 @@ export function ConfirmDialog({ visible, message, onConfirm, onCancel }: Confirm
         <Pressable style={styles.card} onPress={() => {}}>
           {/* Icon */}
           <View style={styles.iconWrap}>
-            <Text style={styles.icon}>⚠️</Text>
+            <Ionicons name="warning-outline" size={28} color={Colors.danger} />
           </View>
 
           <Text style={styles.message}>{message}</Text>
@@ -77,9 +78,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.lg,
-  },
-  icon: {
-    fontSize: 26,
   },
   message: {
     fontSize: Typography.md,
