@@ -1,6 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Animated, Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  GestureHandlerRootView,
+  PinchGestureHandler,
+  TapGestureHandler,
+  PanGestureHandler,
+  State,
+} from 'react-native-gesture-handler';
 import { Radii, Spacing, Typography } from '../theme';
 import { useTheme } from '../context/ThemeContext';
 
@@ -10,13 +17,21 @@ interface ImageViewerProps {
   onClose: () => void;
 }
 
+const MIN_SCALE = 1;
+const MAX_SCALE = 4;
+const DOUBLE_TAP_ZOOM = 2;
+
 export function ImageViewer({ uri, visible, onClose }: ImageViewerProps) {
   const { colors } = useTheme();
   const [loadFailed, setLoadFailed] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
 
+  // Scale state
   const currentScaleRef = useRef(1);
   const scale = useRef(new Animated.Value(1)).current;
+  const baseScaleRef = useRef(1);
+
+  // Pan state
   const pan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
   const dragState = useRef({
     active: false,
@@ -26,11 +41,18 @@ export function ImageViewer({ uri, visible, onClose }: ImageViewerProps) {
     baseY: 0,
   }).current;
 
+  // Gesture handler refs
+  const pinchRef = useRef<PinchGestureHandler>(null);
+  const doubleTapRef = useRef<TapGestureHandler>(null);
+  const singleTapRef = useRef<TapGestureHandler>(null);
+  const panRef = useRef<PanGestureHandler>(null);
+
   useEffect(() => {
     if (visible) {
       setLoadFailed(false);
       setIsZoomed(false);
       currentScaleRef.current = 1;
+      baseScaleRef.current = 1;
       scale.setValue(1);
       pan.setOffset({ x: 0, y: 0 });
       pan.setValue({ x: 0, y: 0 });
@@ -42,8 +64,9 @@ export function ImageViewer({ uri, visible, onClose }: ImageViewerProps) {
   }
 
   function commitScale(nextScale: number) {
-    const clamped = Math.min(4, Math.max(1, nextScale));
+    const clamped = Math.min(MAX_SCALE, Math.max(MIN_SCALE, nextScale));
     currentScaleRef.current = clamped;
+    baseScaleRef.current = clamped;
     scale.setValue(clamped);
     setIsZoomed(clamped > 1);
     if (clamped === 1) {
@@ -62,6 +85,45 @@ export function ImageViewer({ uri, visible, onClose }: ImageViewerProps) {
   function resetZoom() {
     commitScale(1);
   }
+
+  // ── Pinch gesture ──────────────────────────────────────────────────────────
+
+  function handlePinchGestureEvent(event: any) {
+    const rawScale = baseScaleRef.current * event.nativeEvent.scale;
+    const clamped = Math.min(MAX_SCALE, Math.max(MIN_SCALE, rawScale));
+    currentScaleRef.current = clamped;
+    scale.setValue(clamped);
+    setIsZoomed(clamped > 1);
+  }
+
+  function handlePinchStateChange(event: any) {
+    if (
+      event.nativeEvent.state === State.END ||
+      event.nativeEvent.state === State.CANCELLED ||
+      event.nativeEvent.state === State.FAILED
+    ) {
+      const finalScale = currentScaleRef.current;
+      baseScaleRef.current = finalScale;
+      if (finalScale <= 1) {
+        currentScaleRef.current = 1;
+        baseScaleRef.current = 1;
+        scale.setValue(1);
+        setIsZoomed(false);
+        resetPan();
+      }
+    }
+  }
+
+  // ── Double-tap gesture ─────────────────────────────────────────────────────
+
+  function handleDoubleTap(event: any) {
+    if (event.nativeEvent.state === State.ACTIVE) {
+      const next = currentScaleRef.current > 1 ? 1 : DOUBLE_TAP_ZOOM;
+      commitScale(next);
+    }
+  }
+
+  // ── Manual pan (touch events) ──────────────────────────────────────────────
 
   function handleTouchStart(event: any) {
     if (currentScaleRef.current <= 1 || loadFailed) {
@@ -103,12 +165,7 @@ export function ImageViewer({ uri, visible, onClose }: ImageViewerProps) {
     return null;
   }
 
-  const content = loadFailed ? (
-    <View style={styles.errorState}>
-      <Ionicons name="alert-circle-outline" size={48} color={colors.textMuted} />
-      <Text style={[styles.errorText, { color: colors.textPrimary }]}>No se pudo cargar la imagen</Text>
-    </View>
-  ) : (
+  const imageElement = (
     <Image
       source={{ uri }}
       style={styles.image}
@@ -118,6 +175,13 @@ export function ImageViewer({ uri, visible, onClose }: ImageViewerProps) {
     />
   );
 
+  const content = loadFailed ? (
+    <View style={styles.errorState}>
+      <Ionicons name="alert-circle-outline" size={48} color={colors.textMuted} />
+      <Text style={[styles.errorText, { color: colors.textPrimary }]}>No se pudo cargar la imagen</Text>
+    </View>
+  ) : imageElement;
+
   return (
     <Modal
       visible={visible}
@@ -125,100 +189,119 @@ export function ImageViewer({ uri, visible, onClose }: ImageViewerProps) {
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View testID="image-viewer-overlay" style={[styles.overlay, { backgroundColor: colors.overlay }]}> 
-        <Pressable
-          testID="image-viewer-close-overlay"
-          style={StyleSheet.absoluteFill}
-          onPress={onClose}
-        />
-        <View
-          style={styles.content}
-          accessibilityRole="image"
-          pointerEvents="box-none"
-        >
+      <GestureHandlerRootView style={styles.gestureRoot}>
+        <View testID="image-viewer-overlay" style={[styles.overlay, { backgroundColor: colors.overlay }]}>
           <Pressable
-            style={({ pressed }) => [
-              styles.closeButton,
-              { backgroundColor: pressed ? colors.accentDark : colors.accent },
-              { borderColor: colors.borderSubtle },
-            ]}
+            testID="image-viewer-close-overlay"
+            style={StyleSheet.absoluteFill}
             onPress={onClose}
-            accessibilityRole="button"
-            accessibilityLabel="Cerrar visor de imagen"
+          />
+          <View
+            style={styles.content}
+            accessibilityRole="image"
+            pointerEvents="box-none"
           >
-            <Ionicons name="close" size={22} color={colors.textOnAccent} />
-          </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                styles.closeButton,
+                { backgroundColor: pressed ? colors.accentDark : colors.accent },
+                { borderColor: colors.borderSubtle },
+              ]}
+              onPress={onClose}
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar visor de imagen"
+            >
+              <Ionicons name="close" size={22} color={colors.textOnAccent} />
+            </Pressable>
 
-          <View testID="image-viewer-content" style={styles.imageWrap} pointerEvents="box-none">
-            {loadFailed ? (
-              content
-            ) : (
-                <Animated.View
-                testID="image-viewer-draggable-image"
-                style={[
-                  styles.zoomStage,
-                  {
-                    transform: [
-                      { translateX: pan.x },
-                      { translateY: pan.y },
-                      { scale },
-                    ],
-                  },
-                ]}
-                  onTouchStart={handleTouchStart}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleTouchEnd}
-                  onTouchCancel={handleTouchEnd}
-              >
-                {content}
-              </Animated.View>
-            )}
+            <View testID="image-viewer-content" style={styles.imageWrap} pointerEvents="box-none">
+              {loadFailed ? (
+                content
+              ) : (
+                <TapGestureHandler
+                  ref={doubleTapRef}
+                  numberOfTaps={2}
+                  onHandlerStateChange={handleDoubleTap}
+                >
+                  <Animated.View style={styles.gestureSurface}>
+                    <PinchGestureHandler
+                      ref={pinchRef}
+                      onGestureEvent={handlePinchGestureEvent}
+                      onHandlerStateChange={handlePinchStateChange}
+                    >
+                      <Animated.View
+                        testID="image-viewer-draggable-image"
+                        style={[
+                          styles.zoomStage,
+                          {
+                            transform: [
+                              { translateX: pan.x },
+                              { translateY: pan.y },
+                              { scale },
+                            ],
+                          },
+                        ]}
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                        onTouchCancel={handleTouchEnd}
+                      >
+                        {content}
+                      </Animated.View>
+                    </PinchGestureHandler>
+                  </Animated.View>
+                </TapGestureHandler>
+              )}
 
-            {!loadFailed ? (
-              <View style={styles.zoomControls} pointerEvents="box-none">
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.zoomButton,
-                    { backgroundColor: pressed ? colors.accentDark : colors.accent, borderColor: colors.borderSubtle },
-                  ]}
-                  onPress={zoomOut}
-                  accessibilityRole="button"
-                  accessibilityLabel="Reducir zoom"
-                >
-                  <Ionicons name="remove" size={18} color={colors.textOnAccent} />
-                </Pressable>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.zoomButton,
-                    { backgroundColor: pressed ? colors.accentDark : colors.accent, borderColor: colors.borderSubtle },
-                  ]}
-                  onPress={resetZoom}
-                  accessibilityRole="button"
-                  accessibilityLabel="Restablecer zoom"
-                >
-                  <Text style={[styles.zoomButtonText, { color: colors.textOnAccent }]}>1x</Text>
-                </Pressable>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.zoomButton,
-                    { backgroundColor: pressed ? colors.accentDark : colors.accent, borderColor: colors.borderSubtle },
-                  ]}
-                  onPress={zoomIn}
-                  accessibilityRole="button"
-                  accessibilityLabel="Aumentar zoom"
-                >
-                  <Ionicons name="add" size={18} color={colors.textOnAccent} />
-                </Pressable>
-              </View>
-            ) : null}
+              {!loadFailed ? (
+                <View style={styles.zoomControls} pointerEvents="box-none">
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.zoomButton,
+                      { backgroundColor: pressed ? colors.accentDark : colors.accent, borderColor: colors.borderSubtle },
+                    ]}
+                    onPress={zoomOut}
+                    accessibilityRole="button"
+                    accessibilityLabel="Reducir zoom"
+                  >
+                    <Ionicons name="remove" size={18} color={colors.textOnAccent} />
+                  </Pressable>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.zoomButton,
+                      { backgroundColor: pressed ? colors.accentDark : colors.accent, borderColor: colors.borderSubtle },
+                    ]}
+                    onPress={resetZoom}
+                    accessibilityRole="button"
+                    accessibilityLabel="Restablecer zoom"
+                  >
+                    <Text style={[styles.zoomButtonText, { color: colors.textOnAccent }]}>1x</Text>
+                  </Pressable>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.zoomButton,
+                      { backgroundColor: pressed ? colors.accentDark : colors.accent, borderColor: colors.borderSubtle },
+                    ]}
+                    onPress={zoomIn}
+                    accessibilityRole="button"
+                    accessibilityLabel="Aumentar zoom"
+                  >
+                    <Ionicons name="add" size={18} color={colors.textOnAccent} />
+                  </Pressable>
+                </View>
+              ) : null}
+            </View>
           </View>
         </View>
-        </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  gestureRoot: {
+    flex: 1,
+  },
   overlay: {
     flex: 1,
     justifyContent: 'center',
@@ -250,45 +333,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  zoomHintWrap: {
-    position: 'absolute',
-    bottom: Spacing.lg,
-    left: Spacing.lg,
-    right: Spacing.lg,
-    alignItems: 'center',
-  },
-  zoomHint: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.medium,
-    textAlign: 'center',
-    backgroundColor: 'rgba(0,0,0,0.32)',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: Radii.full,
-    overflow: 'hidden',
-  },
-  zoomControls: {
-    position: 'absolute',
-    bottom: Spacing.xxxl,
-    left: Spacing.lg,
-    right: Spacing.lg,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-  },
-  zoomButton: {
-    minWidth: 56,
-    height: 44,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Radii.full,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  zoomButtonText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.semibold,
-  },
   gestureSurface: {
     width: '100%',
     height: '100%',
@@ -314,5 +358,27 @@ const styles = StyleSheet.create({
     fontSize: Typography.md,
     fontWeight: Typography.semibold,
     textAlign: 'center',
+  },
+  zoomControls: {
+    position: 'absolute',
+    bottom: Spacing.xxxl,
+    left: Spacing.lg,
+    right: Spacing.lg,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+  },
+  zoomButton: {
+    minWidth: 56,
+    height: 44,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radii.full,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  zoomButtonText: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.semibold,
   },
 });
