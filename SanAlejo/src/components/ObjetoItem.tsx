@@ -65,24 +65,36 @@ export function ObjetoItem({ objeto, onEdit, onDelete, onPressFoto }: ObjetoItem
           style={({ pressed }) => [
             styles.editBtn,
             { borderColor: colors.accent },
-            pressed && { backgroundColor: colors.accentMuted },
+            pressed && { backgroundColor: colors.accentDark },
           ]}
           onPress={onEdit}
           accessibilityRole="button"
           accessibilityLabel={`Editar ${objeto.nombre}`}
         >
-          <Ionicons name="pencil-outline" size={15} color={colors.accentLight} />
+          {({ pressed }) => (
+            <Ionicons
+              name="pencil-outline"
+              size={15}
+              color={pressed ? colors.textOnAccent : colors.accentLight}
+            />
+          )}
         </Pressable>
         <Pressable
           style={({ pressed }) => [
             styles.deleteBtn,
-            { backgroundColor: pressed ? colors.danger : colors.dangerMuted },
+            { backgroundColor: pressed ? colors.dangerDark : colors.dangerMuted },
           ]}
           onPress={onDelete}
           accessibilityRole="button"
           accessibilityLabel={`Eliminar ${objeto.nombre}`}
         >
-          <Ionicons name="trash-outline" size={15} color={colors.danger} />
+          {({ pressed }) => (
+            <Ionicons
+              name="trash-outline"
+              size={15}
+              color={pressed ? colors.textOnDanger : colors.danger}
+            />
+          )}
         </Pressable>
       </View>
     </View>
