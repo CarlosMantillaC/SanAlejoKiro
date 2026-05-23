@@ -94,8 +94,8 @@ Implementación incremental de un visor de imagen reutilizable a pantalla comple
 		- Confirmar que el modal bloquee la interacción con la pantalla subyacente
 		- _Requirements: 5.5_
 
-- [ ] 6. Escribir pruebas del visor y sus integraciones
-	- [ ] 6.1 Escribir unit tests para `ImageViewer`
+- [x] 6. Escribir pruebas del visor y sus integraciones
+	- [x] 6.1 Escribir unit tests para `ImageViewer`
 		- Caso: `visible=false` → no renderiza elementos visuales
 		- Caso: `visible=true` → renderiza modal, overlay e imagen
 		- Caso: tocar cerrar → llama `onClose`
@@ -103,25 +103,25 @@ Implementación incremental de un visor de imagen reutilizable a pantalla comple
 		- Caso: tema oscuro/claro → usa los tokens correctos
 		- _Requirements: 2.1, 2.2, 2.3, 2.4, 5.2, 5.3, 5.4, 6.1, 6.2, 6.3, 6.4_
 
-	- [ ] 6.2 Escribir pruebas de integración en detalle de contenedor
+	- [x] 6.2 Escribir pruebas de integración en detalle de contenedor
 		- Caso: tocar foto con `foto_uri` → abre el visor
 		- Caso: contenedor sin foto → mantiene placeholder sin apertura
 		- Caso: cerrar visor → conserva el estado de la pantalla base
 		- _Requirements: 1.1, 1.4, 3.1, 3.2, 3.4_
 
-	- [ ] 6.3 Escribir pruebas de integración en formulario de objeto
+	- [x] 6.3 Escribir pruebas de integración en formulario de objeto
 		- Caso: tocar vista previa → abre el visor
 		- Caso: modo creación sin imagen → no abre visor
 		- Caso: cerrar visor → no modifica campos ni `foto_uri`
 		- _Requirements: 1.2, 1.3, 3.4_
 
-- [ ] 7. Validación final
-	- [ ] 7.1 Ejecutar la batería de tests del área tocada
+- [x] 7. Validación final
+	- [x] 7.1 Ejecutar la batería de tests del área tocada
 		- Verificar tests de componentes, pantallas y utilidades relacionadas
 		- Corregir regresiones solo en el slice afectado
 		- _Requirements: todas las aplicables_
 
-	- [ ] 7.2 Revisar consistencia con requirements y design
+	- [x] 7.2 Revisar consistencia con requirements y design
 		- Confirmar que el visor cumple cierre, overlay, error state, accesibilidad, zoom y tema
 		- Confirmar que no se añadió navegación ni estado global innecesario
 		- _Requirements: 2.x, 3.x, 4.x, 5.x, 6.x_
