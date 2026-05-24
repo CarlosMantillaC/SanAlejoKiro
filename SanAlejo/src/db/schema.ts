@@ -1,7 +1,7 @@
 import { SQLiteDatabase } from 'expo-sqlite';
 
 export async function initializeDatabase(db: SQLiteDatabase): Promise<void> {
-  const DATABASE_VERSION = 4;
+  const DATABASE_VERSION = 5;
 
   // Enable foreign keys (must be outside any transaction)
   await db.runAsync('PRAGMA foreign_keys = ON');
@@ -12,8 +12,8 @@ export async function initializeDatabase(db: SQLiteDatabase): Promise<void> {
   const user_version = result?.user_version ?? 0;
 
   if (user_version >= DATABASE_VERSION) {
-    // Defensive check: ensure objeto_foto exists for devices that reached
-    // user_version=3 without the table being created (e.g. mid-migration crash)
+    // Defensive check: ensure objeto_foto and etiqueta tables exist for devices
+    // that reached newer versions without the tables being created (e.g. mid-migration crash)
     await db.runAsync(`
       CREATE TABLE IF NOT EXISTS objeto_foto (
         id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,6 +26,31 @@ export async function initializeDatabase(db: SQLiteDatabase): Promise<void> {
     await db.runAsync(
       'CREATE INDEX IF NOT EXISTS idx_objeto_foto_id_objeto ON objeto_foto (id_objeto)'
     );
+
+    await db.runAsync(`
+      CREATE TABLE IF NOT EXISTS etiqueta (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT NOT NULL UNIQUE,
+        fecha_creacion INTEGER NOT NULL DEFAULT 0
+      )
+    `);
+    await db.runAsync(`
+      CREATE TABLE IF NOT EXISTS objeto_etiqueta (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_objeto INTEGER NOT NULL,
+        id_etiqueta INTEGER NOT NULL,
+        FOREIGN KEY (id_objeto) REFERENCES objeto(id) ON DELETE CASCADE,
+        FOREIGN KEY (id_etiqueta) REFERENCES etiqueta(id) ON DELETE CASCADE,
+        UNIQUE (id_objeto, id_etiqueta)
+      )
+    `);
+    await db.runAsync(
+      'CREATE INDEX IF NOT EXISTS idx_objeto_etiqueta_objeto ON objeto_etiqueta (id_objeto)'
+    );
+    await db.runAsync(
+      'CREATE INDEX IF NOT EXISTS idx_objeto_etiqueta_etiqueta ON objeto_etiqueta (id_etiqueta)'
+    );
+
     return;
   }
 
@@ -70,6 +95,29 @@ export async function initializeDatabase(db: SQLiteDatabase): Promise<void> {
     await db.runAsync(
       'CREATE INDEX IF NOT EXISTS idx_objeto_foto_id_objeto ON objeto_foto (id_objeto)'
     );
+    await db.runAsync(`
+      CREATE TABLE IF NOT EXISTS etiqueta (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT NOT NULL UNIQUE,
+        fecha_creacion INTEGER NOT NULL DEFAULT 0
+      )
+    `);
+    await db.runAsync(`
+      CREATE TABLE IF NOT EXISTS objeto_etiqueta (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_objeto INTEGER NOT NULL,
+        id_etiqueta INTEGER NOT NULL,
+        FOREIGN KEY (id_objeto) REFERENCES objeto(id) ON DELETE CASCADE,
+        FOREIGN KEY (id_etiqueta) REFERENCES etiqueta(id) ON DELETE CASCADE,
+        UNIQUE (id_objeto, id_etiqueta)
+      )
+    `);
+    await db.runAsync(
+      'CREATE INDEX IF NOT EXISTS idx_objeto_etiqueta_objeto ON objeto_etiqueta (id_objeto)'
+    );
+    await db.runAsync(
+      'CREATE INDEX IF NOT EXISTS idx_objeto_etiqueta_etiqueta ON objeto_etiqueta (id_etiqueta)'
+    );
   }
 
   if (user_version === 1) {
@@ -95,6 +143,33 @@ export async function initializeDatabase(db: SQLiteDatabase): Promise<void> {
       INSERT INTO objeto_foto (id_objeto, uri, orden)
         SELECT id, foto_uri, 0 FROM objeto WHERE foto_uri IS NOT NULL
     `);
+  }
+
+  if (user_version === 4) {
+    // v4 → v5: crear tablas de etiqueta y objeto_etiqueta
+    await db.runAsync(`
+      CREATE TABLE IF NOT EXISTS etiqueta (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT NOT NULL UNIQUE,
+        fecha_creacion INTEGER NOT NULL DEFAULT 0
+      )
+    `);
+    await db.runAsync(`
+      CREATE TABLE IF NOT EXISTS objeto_etiqueta (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_objeto INTEGER NOT NULL,
+        id_etiqueta INTEGER NOT NULL,
+        FOREIGN KEY (id_objeto) REFERENCES objeto(id) ON DELETE CASCADE,
+        FOREIGN KEY (id_etiqueta) REFERENCES etiqueta(id) ON DELETE CASCADE,
+        UNIQUE (id_objeto, id_etiqueta)
+      )
+    `);
+    await db.runAsync(
+      'CREATE INDEX IF NOT EXISTS idx_objeto_etiqueta_objeto ON objeto_etiqueta (id_objeto)'
+    );
+    await db.runAsync(
+      'CREATE INDEX IF NOT EXISTS idx_objeto_etiqueta_etiqueta ON objeto_etiqueta (id_etiqueta)'
+    );
   }
 
   await db.runAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);

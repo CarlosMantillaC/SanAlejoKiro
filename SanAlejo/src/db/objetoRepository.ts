@@ -1,4 +1,6 @@
 import { SQLiteDatabase } from 'expo-sqlite';
+import { getEtiquetasForObjetos } from './objetoEtiquetaRepository';
+import { Etiqueta, deleteUnusedEtiquetas } from './etiquetaRepository';
 
 export interface Objeto {
   id: number;
@@ -55,6 +57,8 @@ export async function updateObjeto(
 
 export async function deleteObjeto(db: SQLiteDatabase, id: number): Promise<void> {
   await db.runAsync('DELETE FROM objeto WHERE id = ?', id);
+  // Cleanup etiquetas that no longer reference any objeto
+  await deleteUnusedEtiquetas(db);
 }
 
 /**
@@ -98,19 +102,27 @@ export interface ObjetoConPortada extends Objeto {
 
 export async function getObjetosConPortadaByContenedor(
   db: SQLiteDatabase,
-  id_contenedor: number
+  id_contenedor: number,
+  etiquetaIds?: number[]
 ): Promise<ObjetoConPortada[]> {
-  return db.getAllAsync<ObjetoConPortada>(
-    `SELECT o.*,
+  let sql = `SELECT o.*,
             (SELECT uri FROM objeto_foto
              WHERE id_objeto = o.id
              ORDER BY orden ASC
              LIMIT 1) AS portada_uri
      FROM objeto o
-     WHERE o.id_contenedor = ?
-     ORDER BY o.nombre ASC`,
-    id_contenedor
-  );
+     WHERE o.id_contenedor = ?`;
+
+  const params: any[] = [id_contenedor];
+  if (etiquetaIds && etiquetaIds.length > 0) {
+    const placeholders = etiquetaIds.map(() => '?').join(', ');
+    sql += ` AND EXISTS (SELECT 1 FROM objeto_etiqueta oe WHERE oe.id_objeto = o.id AND oe.id_etiqueta IN (${placeholders}))`;
+    params.push(...etiquetaIds);
+  }
+
+  sql += '\n     ORDER BY o.nombre ASC';
+
+  return db.getAllAsync<ObjetoConPortada>(sql, ...params);
 }
 
 export interface ObjetoConContenedorYPortada extends ObjetoConContenedor {
@@ -135,4 +147,46 @@ export async function searchObjetosConPortada(
      ORDER BY o.nombre ASC`,
     pattern, pattern
   );
+}
+
+/** Versión que devuelve también las etiquetas asociadas (batch) y acepta filtro por etiquetas. */
+export async function getObjetosConPortadaWithEtiquetasByContenedor(
+  db: SQLiteDatabase,
+  id_contenedor: number,
+  etiquetaIds?: number[]
+): Promise<(ObjetoConPortada & { etiquetas: Etiqueta[] })[]> {
+  const objetos = await getObjetosConPortadaByContenedor(db, id_contenedor, etiquetaIds);
+  const ids = objetos.map(o => o.id);
+  const map = await getEtiquetasForObjetos(db, ids);
+  return objetos.map(o => ({ ...o, etiquetas: map.get(o.id) ?? [] }));
+}
+
+export async function searchObjetosConPortadaWithEtiquetas(
+  db: SQLiteDatabase,
+  query: string,
+  etiquetaIds?: number[]
+): Promise<(ObjetoConContenedorYPortada & { etiquetas: Etiqueta[] })[]> {
+  const pattern = `%${query}%`;
+  let sql = `SELECT o.*, c.nombre AS nombre_contenedor,
+            (SELECT uri FROM objeto_foto
+             WHERE id_objeto = o.id
+             ORDER BY orden ASC
+             LIMIT 1) AS portada_uri
+     FROM objeto o
+     JOIN contenedor c ON o.id_contenedor = c.id
+     WHERE (o.nombre LIKE ? COLLATE NOCASE OR o.descripcion LIKE ? COLLATE NOCASE)`;
+
+  const params: any[] = [pattern, pattern];
+  if (etiquetaIds && etiquetaIds.length > 0) {
+    const placeholders = etiquetaIds.map(() => '?').join(', ');
+    sql += ` AND EXISTS (SELECT 1 FROM objeto_etiqueta oe WHERE oe.id_objeto = o.id AND oe.id_etiqueta IN (${placeholders}))`;
+    params.push(...etiquetaIds);
+  }
+
+  sql += '\n     ORDER BY o.nombre ASC';
+
+  const objetos = await db.getAllAsync<ObjetoConContenedorYPortada>(sql, ...params);
+  const ids = objetos.map(o => o.id);
+  const map = await getEtiquetasForObjetos(db, ids);
+  return objetos.map(o => ({ ...o, etiquetas: map.get(o.id) ?? [] }));
 }
