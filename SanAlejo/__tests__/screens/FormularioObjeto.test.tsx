@@ -1,11 +1,11 @@
 /**
- * Integration tests for NuevoObjeto and EditarObjeto screens and ImageViewer integration.
+ * Integration tests for NuevoObjeto and EditarObjeto screens.
  *
- * Validates: Requirements 1.2, 1.3, 3.4
+ * Validates: Requirements 1.2, 1.3, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 3.4, 3.5, 3.6, 3.7
  */
 
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor, act } from '@testing-library/react-native';
 import { ThemeProvider } from '../../src/context/ThemeContext';
 
 // ---------------------------------------------------------------------------
@@ -29,6 +29,7 @@ jest.mock('@expo/vector-icons', () => {
 
 // Mock expo-router
 const mockRouterBack = jest.fn();
+const mockNavigationAddListener = jest.fn();
 
 jest.mock('expo-router', () => ({
   Stack: {
@@ -39,6 +40,9 @@ jest.mock('expo-router', () => ({
     back: (...args: any[]) => mockRouterBack(...args),
   },
   useLocalSearchParams: () => ({ id: '5', id_contenedor: '1' }),
+  useNavigation: () => ({
+    addListener: mockNavigationAddListener,
+  }),
 }));
 
 // Mock expo-sqlite context
@@ -57,6 +61,7 @@ jest.mock('expo-sqlite', () => ({
 const mockInsertObjeto = jest.fn();
 const mockGetObjetoById = jest.fn();
 const mockUpdateObjeto = jest.fn();
+const mockInsertFotos = jest.fn();
 
 jest.mock('../../src/db/objetoRepository', () => ({
   insertObjeto: (...args: any[]) => mockInsertObjeto(...args),
@@ -64,13 +69,24 @@ jest.mock('../../src/db/objetoRepository', () => ({
   updateObjeto: (...args: any[]) => mockUpdateObjeto(...args),
 }));
 
+const mockSyncFotos = jest.fn();
+
+jest.mock('../../src/db/fotoRepository', () => ({
+  insertFotos: (...args: any[]) => mockInsertFotos(...args),
+  getFotosByObjeto: jest.fn().mockResolvedValue([]),
+  syncFotos: (...args: any[]) => mockSyncFotos(...args),
+}));
+
 // Mock imageStorage
+const mockDeleteImagesFromStorage = jest.fn();
+
 jest.mock('../../src/utils/imageStorage', () => ({
   copyImageToStorage: jest.fn().mockResolvedValue('file:///stored-foto.jpg'),
   deleteImageFromStorage: jest.fn().mockResolvedValue(undefined),
+  deleteImagesFromStorage: (...args: any[]) => mockDeleteImagesFromStorage(...args),
 }));
 
-// Mock expo-image-picker (already has a manual mock, but explicit here for clarity)
+// Mock expo-image-picker
 jest.mock('expo-image-picker', () => ({
   requestMediaLibraryPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
   requestCameraPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
@@ -78,6 +94,26 @@ jest.mock('expo-image-picker', () => ({
   launchCameraAsync: jest.fn().mockResolvedValue({ canceled: true, assets: [] }),
   MediaTypeOptions: { Images: 'Images' },
 }));
+
+// Mock GaleriaEditor to simplify testing of NuevoObjeto
+// The mock exposes a button that simulates adding a photo
+jest.mock('../../src/components/GaleriaEditor', () => {
+  const React = require('react');
+  const { Pressable, Text } = require('react-native');
+  return {
+    GaleriaEditor: ({ onFotosChange, onPermissionDenied, onError }: any) =>
+      React.createElement(
+        Pressable,
+        {
+          onPress: () =>
+            onFotosChange([{ id: null, uri: 'file:///test.jpg', isNew: true }]),
+          accessibilityLabel: 'Mock Galeria',
+          testID: 'mock-galeria-editor',
+        },
+        React.createElement(Text, null, 'Agregar foto')
+      ),
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -117,97 +153,157 @@ function renderEditarObjeto() {
 // NuevoObjeto tests
 // ---------------------------------------------------------------------------
 
-describe('NuevoObjeto — integración con ImageViewer', () => {
+describe('NuevoObjeto — integración con GaleriaEditor', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseColorScheme.mockReturnValue('dark');
+    // Default: addListener returns an unsubscribe function
+    mockNavigationAddListener.mockReturnValue(() => {});
+    mockInsertObjeto.mockResolvedValue(42);
+    mockInsertFotos.mockResolvedValue(undefined);
+    mockDeleteImagesFromStorage.mockResolvedValue(undefined);
   });
 
-  // Requirement 1.3 — creation mode without image: viewer does not open
-  it('no abre el visor en modo creación cuando no hay imagen seleccionada', () => {
+  // Requirement 2.1, 2.2 — GaleriaEditor is rendered
+  it('renderiza el componente GaleriaEditor', () => {
     renderNuevoObjeto();
-
-    // No preview tap target should exist
-    expect(screen.queryByLabelText('Ver foto del objeto')).toBeNull();
-
-    // Viewer must remain closed
-    expect(screen.queryByTestId('image-viewer-overlay')).toBeNull();
+    expect(screen.getByTestId('mock-galeria-editor')).toBeTruthy();
   });
 
-  // Requirement 1.3 — creation mode with image: viewer opens on preview tap
-  it('abre el visor al tocar la vista previa en modo creación cuando hay imagen', async () => {
-    const { copyImageToStorage } = require('../../src/utils/imageStorage');
-    (copyImageToStorage as jest.Mock).mockResolvedValue('file:///stored-foto.jpg');
-
-    const ImagePicker = require('expo-image-picker');
-    ImagePicker.launchImageLibraryAsync.mockResolvedValueOnce({
-      canceled: false,
-      assets: [{ uri: 'file:///original-foto.jpg' }],
-    });
-
+  // Requirement 2.5, 2.6 — saving with no photos calls insertObjeto with foto_uri: null and insertFotos with empty array
+  it('al guardar sin fotos llama insertObjeto con foto_uri: null e insertFotos con array vacío', async () => {
     renderNuevoObjeto();
 
-    // Trigger image selection via gallery button
-    fireEvent.press(screen.getByLabelText('Seleccionar foto de galería'));
+    fireEvent.changeText(screen.getByLabelText('Nombre del objeto'), 'Martillo');
+    fireEvent.changeText(screen.getByLabelText('Descripción del objeto'), 'Martillo de carpintero');
 
-    // Wait for the preview to appear
-    await waitFor(() => {
-      expect(screen.getByLabelText('Ver foto del objeto')).toBeTruthy();
-    });
-
-    // Viewer should not be open yet
-    expect(screen.queryByTestId('image-viewer-overlay')).toBeNull();
-
-    // Tap the preview
-    fireEvent.press(screen.getByLabelText('Ver foto del objeto'));
+    fireEvent.press(screen.getByLabelText('Guardar objeto'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('image-viewer-overlay')).toBeTruthy();
+      expect(mockInsertObjeto).toHaveBeenCalledWith(
+        mockDb,
+        expect.objectContaining({ nombre: 'Martillo', foto_uri: null })
+      );
     });
+
+    await waitFor(() => {
+      expect(mockInsertFotos).toHaveBeenCalledWith(mockDb, 42, []);
+    });
+
+    expect(mockRouterBack).toHaveBeenCalled();
   });
 
-  // Requirement 3.4 — closing viewer does not modify form fields or foto_uri
-  it('cerrar el visor no modifica los campos del formulario ni foto_uri', async () => {
-    const { copyImageToStorage } = require('../../src/utils/imageStorage');
-    (copyImageToStorage as jest.Mock).mockResolvedValue('file:///stored-foto.jpg');
+  // Requirement 2.5, 2.6 — saving with photos calls insertFotos with correct URIs
+  it('al guardar con fotos llama insertFotos con las URIs correctas', async () => {
+    renderNuevoObjeto();
 
-    const ImagePicker = require('expo-image-picker');
-    ImagePicker.launchImageLibraryAsync.mockResolvedValueOnce({
-      canceled: false,
-      assets: [{ uri: 'file:///original-foto.jpg' }],
+    fireEvent.changeText(screen.getByLabelText('Nombre del objeto'), 'Martillo');
+    fireEvent.changeText(screen.getByLabelText('Descripción del objeto'), 'Martillo de carpintero');
+
+    // Simulate adding a photo via the mock GaleriaEditor
+    fireEvent.press(screen.getByTestId('mock-galeria-editor'));
+
+    fireEvent.press(screen.getByLabelText('Guardar objeto'));
+
+    await waitFor(() => {
+      expect(mockInsertObjeto).toHaveBeenCalledWith(
+        mockDb,
+        expect.objectContaining({ nombre: 'Martillo', foto_uri: null })
+      );
+    });
+
+    await waitFor(() => {
+      expect(mockInsertFotos).toHaveBeenCalledWith(mockDb, 42, ['file:///test.jpg']);
+    });
+
+    expect(mockRouterBack).toHaveBeenCalled();
+  });
+
+  // Requirement 3.7 — DB error shows banner and does not navigate
+  it('error de BD al guardar muestra el banner de error y no navega', async () => {
+    mockInsertObjeto.mockRejectedValue(new Error('DB error'));
+
+    renderNuevoObjeto();
+
+    fireEvent.changeText(screen.getByLabelText('Nombre del objeto'), 'Martillo');
+    fireEvent.changeText(screen.getByLabelText('Descripción del objeto'), 'Martillo de carpintero');
+    fireEvent.press(screen.getByLabelText('Guardar objeto'));
+
+    await waitFor(() => {
+      expect(screen.getByText('No se pudo guardar el objeto.')).toBeTruthy();
+    });
+
+    expect(mockRouterBack).not.toHaveBeenCalled();
+  });
+
+  // Requirement 3.7 — insertFotos error shows banner and does not navigate
+  it('error de insertFotos al guardar muestra el banner de error y no navega', async () => {
+    mockInsertFotos.mockRejectedValue(new Error('DB error'));
+
+    renderNuevoObjeto();
+
+    fireEvent.changeText(screen.getByLabelText('Nombre del objeto'), 'Martillo');
+    fireEvent.changeText(screen.getByLabelText('Descripción del objeto'), 'Martillo de carpintero');
+    fireEvent.press(screen.getByLabelText('Guardar objeto'));
+
+    await waitFor(() => {
+      expect(screen.getByText('No se pudo guardar el objeto.')).toBeTruthy();
+    });
+
+    expect(mockRouterBack).not.toHaveBeenCalled();
+  });
+
+  // Requirement 3.6 — beforeRemove listener is registered
+  it('registra un listener beforeRemove para limpiar fotos nuevas al cancelar', () => {
+    renderNuevoObjeto();
+    expect(mockNavigationAddListener).toHaveBeenCalledWith('beforeRemove', expect.any(Function));
+  });
+
+  // Property 9 — Validates: Requirements 3.6
+  // Al cancelar, deleteImagesFromStorage recibe exactamente las fotos nuevas no guardadas
+  it('al activar beforeRemove con fotos nuevas, llama deleteImagesFromStorage con esas URIs', async () => {
+    let capturedBeforeRemoveHandler: (() => Promise<void>) | null = null;
+    mockNavigationAddListener.mockImplementation((event: string, handler: () => Promise<void>) => {
+      if (event === 'beforeRemove') {
+        capturedBeforeRemoveHandler = handler;
+      }
+      return () => {};
     });
 
     renderNuevoObjeto();
 
-    // Fill in the nombre field
-    fireEvent.changeText(screen.getByLabelText('Nombre del objeto'), 'Llave inglesa');
+    // Add a photo via the mock GaleriaEditor
+    fireEvent.press(screen.getByTestId('mock-galeria-editor'));
 
-    // Select an image
-    fireEvent.press(screen.getByLabelText('Seleccionar foto de galería'));
-
-    await waitFor(() => {
-      expect(screen.getByLabelText('Ver foto del objeto')).toBeTruthy();
+    // Simulate navigation back (beforeRemove fires)
+    expect(capturedBeforeRemoveHandler).not.toBeNull();
+    await act(async () => {
+      await capturedBeforeRemoveHandler!();
     });
 
-    // Open the viewer
-    fireEvent.press(screen.getByLabelText('Ver foto del objeto'));
+    expect(mockDeleteImagesFromStorage).toHaveBeenCalledWith(['file:///test.jpg']);
+  });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('image-viewer-overlay')).toBeTruthy();
+  // Property 9 — Al cancelar sin fotos nuevas, no llama deleteImagesFromStorage
+  it('al activar beforeRemove sin fotos nuevas, no llama deleteImagesFromStorage', async () => {
+    let capturedBeforeRemoveHandler: (() => Promise<void>) | null = null;
+    mockNavigationAddListener.mockImplementation((event: string, handler: () => Promise<void>) => {
+      if (event === 'beforeRemove') {
+        capturedBeforeRemoveHandler = handler;
+      }
+      return () => {};
     });
 
-    // Close the viewer
-    fireEvent.press(screen.getByLabelText('Cerrar visor de imagen'));
+    renderNuevoObjeto();
 
-    await waitFor(() => {
-      expect(screen.queryByTestId('image-viewer-overlay')).toBeNull();
+    // No photos added
+
+    expect(capturedBeforeRemoveHandler).not.toBeNull();
+    await act(async () => {
+      await capturedBeforeRemoveHandler!();
     });
 
-    // Form fields must be unchanged
-    expect(screen.getByLabelText('Nombre del objeto').props.value).toBe('Llave inglesa');
-
-    // Preview must still be present (foto_uri not cleared)
-    expect(screen.getByLabelText('Ver foto del objeto')).toBeTruthy();
+    expect(mockDeleteImagesFromStorage).not.toHaveBeenCalled();
   });
 });
 
@@ -215,76 +311,194 @@ describe('NuevoObjeto — integración con ImageViewer', () => {
 // EditarObjeto tests
 // ---------------------------------------------------------------------------
 
-describe('EditarObjeto — integración con ImageViewer', () => {
+describe('EditarObjeto — integración con GaleriaEditor', () => {
+  const { getFotosByObjeto } = require('../../src/db/fotoRepository');
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseColorScheme.mockReturnValue('dark');
     mockGetObjetoById.mockResolvedValue(objetoConFoto);
+    mockNavigationAddListener.mockReturnValue(() => {});
+    mockUpdateObjeto.mockResolvedValue(undefined);
+    mockSyncFotos.mockResolvedValue(undefined);
+    mockDeleteImagesFromStorage.mockResolvedValue(undefined);
+    getFotosByObjeto.mockResolvedValue([]);
   });
 
-  // Requirement 1.2 — edit mode: viewer opens on preview tap
-  it('abre el visor al tocar la vista previa en modo edición', async () => {
-    renderEditarObjeto();
-
-    // Wait for the form to load with the existing image
-    await waitFor(() => {
-      expect(screen.getByLabelText('Ver foto del objeto')).toBeTruthy();
-    });
-
-    // Viewer should not be open yet
-    expect(screen.queryByTestId('image-viewer-overlay')).toBeNull();
-
-    // Tap the preview
-    fireEvent.press(screen.getByLabelText('Ver foto del objeto'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('image-viewer-overlay')).toBeTruthy();
-    });
-  });
-
-  // Requirement 3.4 — closing viewer does not modify form fields or foto_uri
-  it('cerrar el visor no modifica los campos del formulario ni foto_uri en modo edición', async () => {
+  // Requirement 3.1 — GaleriaEditor is rendered after loading
+  it('renderiza el componente GaleriaEditor tras cargar', async () => {
     renderEditarObjeto();
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Ver foto del objeto')).toBeTruthy();
+      expect(screen.getByTestId('mock-galeria-editor')).toBeTruthy();
     });
-
-    // Verify the nombre field is pre-filled
-    expect(screen.getByLabelText('Nombre del objeto').props.value).toBe('Llave inglesa');
-
-    // Open the viewer
-    fireEvent.press(screen.getByLabelText('Ver foto del objeto'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('image-viewer-overlay')).toBeTruthy();
-    });
-
-    // Close the viewer
-    fireEvent.press(screen.getByLabelText('Cerrar visor de imagen'));
-
-    await waitFor(() => {
-      expect(screen.queryByTestId('image-viewer-overlay')).toBeNull();
-    });
-
-    // Form fields must be unchanged
-    expect(screen.getByLabelText('Nombre del objeto').props.value).toBe('Llave inglesa');
-
-    // Preview must still be present (foto_uri not cleared)
-    expect(screen.getByLabelText('Ver foto del objeto')).toBeTruthy();
   });
 
-  // Requirement 1.2 — edit mode without image: no viewer tap target
-  it('no expone tap de vista previa cuando el objeto no tiene foto en modo edición', async () => {
-    mockGetObjetoById.mockResolvedValue({ ...objetoConFoto, foto_uri: null });
+  // Requirement 3.2 — getFotosByObjeto is called on load
+  it('llama getFotosByObjeto al cargar el objeto', async () => {
+    renderEditarObjeto();
+
+    await waitFor(() => {
+      expect(getFotosByObjeto).toHaveBeenCalledWith(mockDb, 5);
+    });
+  });
+
+  // Requirement 3.1 — pre-fills form fields from loaded object
+  it('pre-rellena los campos del formulario con los datos del objeto', async () => {
+    renderEditarObjeto();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Nombre del objeto').props.value).toBe('Llave inglesa');
+    });
+
+    expect(screen.getByLabelText('Descripción del objeto').props.value).toBe('Llave ajustable 12"');
+  });
+
+  // Requirement 3.3, 3.4 — saving calls syncFotos with correct parameters
+  it('al guardar llama syncFotos con los parámetros correctos', async () => {
+    // Simulate existing photo loaded from DB
+    getFotosByObjeto.mockResolvedValue([{ id: 10, id_objeto: 5, uri: 'file:///existing.jpg', orden: 0 }]);
 
     renderEditarObjeto();
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Nombre del objeto')).toBeTruthy();
+      expect(screen.getByTestId('mock-galeria-editor')).toBeTruthy();
     });
 
-    expect(screen.queryByLabelText('Ver foto del objeto')).toBeNull();
-    expect(screen.queryByTestId('image-viewer-overlay')).toBeNull();
+    fireEvent.press(screen.getByLabelText('Guardar objeto'));
+
+    await waitFor(() => {
+      expect(mockUpdateObjeto).toHaveBeenCalledWith(mockDb, 5, {
+        nombre: 'Llave inglesa',
+        descripcion: 'Llave ajustable 12"',
+        foto_uri: null,
+      });
+    });
+
+    await waitFor(() => {
+      // No deletions, no new uris, existing photo id in orderedIds
+      expect(mockSyncFotos).toHaveBeenCalledWith(mockDb, 5, [], [], [10]);
+    });
+
+    expect(mockRouterBack).toHaveBeenCalled();
+  });
+
+  // Requirement 3.5 — deleteImagesFromStorage called for removed photos
+  it('al guardar con fotos eliminadas llama deleteImagesFromStorage con las URIs removidas', async () => {
+    // Simulate existing photo loaded from DB
+    getFotosByObjeto.mockResolvedValue([{ id: 10, id_objeto: 5, uri: 'file:///existing.jpg', orden: 0 }]);
+
+    renderEditarObjeto();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-galeria-editor')).toBeTruthy();
+    });
+
+    // Simulate removing the existing photo via GaleriaEditor (empty fotos)
+    fireEvent.press(screen.getByTestId('mock-galeria-editor'));
+    // After pressing, mock sets fotos to [{ id: null, uri: 'file:///test.jpg', isNew: true }]
+    // The existing photo (id:10) is no longer in fotos → it's deleted
+
+    fireEvent.press(screen.getByLabelText('Guardar objeto'));
+
+    await waitFor(() => {
+      expect(mockSyncFotos).toHaveBeenCalledWith(
+        mockDb,
+        5,
+        [10],                      // deletedIds
+        ['file:///test.jpg'],      // newUris
+        []                         // orderedIds (no existing non-new photos)
+      );
+    });
+
+    await waitFor(() => {
+      expect(mockDeleteImagesFromStorage).toHaveBeenCalledWith(['file:///existing.jpg']);
+    });
+  });
+
+  // Requirement 3.7 — DB error shows banner and does not navigate
+  it('error de BD al guardar muestra el banner de error y no navega', async () => {
+    mockUpdateObjeto.mockRejectedValue(new Error('DB error'));
+
+    renderEditarObjeto();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-galeria-editor')).toBeTruthy();
+    });
+
+    fireEvent.changeText(screen.getByLabelText('Nombre del objeto'), 'Llave inglesa');
+    fireEvent.changeText(screen.getByLabelText('Descripción del objeto'), 'Llave ajustable 12"');
+    fireEvent.press(screen.getByLabelText('Guardar objeto'));
+
+    await waitFor(() => {
+      expect(screen.getByText('No se pudo guardar el objeto.')).toBeTruthy();
+    });
+
+    expect(mockRouterBack).not.toHaveBeenCalled();
+  });
+
+  // Requirement 3.6 — beforeRemove listener is registered
+  it('registra un listener beforeRemove para limpiar fotos nuevas al cancelar', async () => {
+    renderEditarObjeto();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-galeria-editor')).toBeTruthy();
+    });
+
+    expect(mockNavigationAddListener).toHaveBeenCalledWith('beforeRemove', expect.any(Function));
+  });
+
+  // Requirement 3.6 — beforeRemove cleans up new photos
+  it('al activar beforeRemove con fotos nuevas, llama deleteImagesFromStorage con esas URIs', async () => {
+    let capturedBeforeRemoveHandler: (() => Promise<void>) | null = null;
+    mockNavigationAddListener.mockImplementation((event: string, handler: () => Promise<void>) => {
+      if (event === 'beforeRemove') {
+        capturedBeforeRemoveHandler = handler;
+      }
+      return () => {};
+    });
+
+    renderEditarObjeto();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-galeria-editor')).toBeTruthy();
+    });
+
+    // Add a new photo via the mock GaleriaEditor
+    fireEvent.press(screen.getByTestId('mock-galeria-editor'));
+
+    // Simulate navigation back (beforeRemove fires)
+    expect(capturedBeforeRemoveHandler).not.toBeNull();
+    await act(async () => {
+      await capturedBeforeRemoveHandler!();
+    });
+
+    expect(mockDeleteImagesFromStorage).toHaveBeenCalledWith(['file:///test.jpg']);
+  });
+
+  // Requirement 3.6 — beforeRemove does not call deleteImagesFromStorage when no new photos
+  it('al activar beforeRemove sin fotos nuevas, no llama deleteImagesFromStorage', async () => {
+    let capturedBeforeRemoveHandler: (() => Promise<void>) | null = null;
+    mockNavigationAddListener.mockImplementation((event: string, handler: () => Promise<void>) => {
+      if (event === 'beforeRemove') {
+        capturedBeforeRemoveHandler = handler;
+      }
+      return () => {};
+    });
+
+    renderEditarObjeto();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-galeria-editor')).toBeTruthy();
+    });
+
+    // No new photos added
+
+    expect(capturedBeforeRemoveHandler).not.toBeNull();
+    await act(async () => {
+      await capturedBeforeRemoveHandler!();
+    });
+
+    expect(mockDeleteImagesFromStorage).not.toHaveBeenCalled();
   });
 });

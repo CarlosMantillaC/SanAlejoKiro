@@ -2,7 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { ThemeProvider } from '../../src/context/ThemeContext';
 import { ObjetoItem } from '../../src/components/ObjetoItem';
-import { Objeto } from '../../src/db/objetoRepository';
+import { ObjetoConPortada } from '../../src/db/objetoRepository';
 
 const mockUseColorScheme = jest.fn<string | null | undefined, []>();
 
@@ -29,17 +29,19 @@ describe('ObjetoItem', () => {
     mockUseColorScheme.mockReturnValue('dark');
   });
 
-  const objetoConFoto: Objeto = {
+  const objetoConFoto: ObjetoConPortada = {
     id: 1,
     nombre: 'Caja de cables',
     descripcion: 'Cables HDMI y USB',
     id_contenedor: 10,
     foto_uri: 'file:///foto.jpg',
+    portada_uri: 'file:///foto.jpg',
   };
 
-  const objetoSinFoto: Objeto = {
+  const objetoSinFoto: ObjetoConPortada = {
     ...objetoConFoto,
     foto_uri: null,
+    portada_uri: null,
   };
 
   it('expone la foto como botón solo cuando existe foto_uri', () => {
