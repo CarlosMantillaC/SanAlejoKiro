@@ -1,7 +1,7 @@
 import { SQLiteDatabase } from 'expo-sqlite';
 
 export async function initializeDatabase(db: SQLiteDatabase): Promise<void> {
-  const DATABASE_VERSION = 3;
+  const DATABASE_VERSION = 4;
 
   // Enable foreign keys (must be outside any transaction)
   await db.runAsync('PRAGMA foreign_keys = ON');
@@ -29,15 +29,23 @@ export async function initializeDatabase(db: SQLiteDatabase): Promise<void> {
     return;
   }
 
+  if (user_version === 3) {
+    // v3 → v4: agregar fecha_creacion a contenedor
+    await db.runAsync(
+      'ALTER TABLE contenedor ADD COLUMN fecha_creacion INTEGER NOT NULL DEFAULT 0'
+    );
+  }
+
   if (user_version === 0) {
     // Fresh install: create all tables
     await db.runAsync('PRAGMA journal_mode = WAL');
     await db.runAsync(`
       CREATE TABLE IF NOT EXISTS contenedor (
-        id          INTEGER PRIMARY KEY AUTOINCREMENT,
-        nombre      TEXT NOT NULL,
-        descripcion TEXT NOT NULL,
-        ubicacion   TEXT NOT NULL
+        id             INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre         TEXT NOT NULL,
+        descripcion    TEXT NOT NULL,
+        ubicacion      TEXT NOT NULL,
+        fecha_creacion INTEGER NOT NULL DEFAULT 0
       )
     `);
     await db.runAsync(`

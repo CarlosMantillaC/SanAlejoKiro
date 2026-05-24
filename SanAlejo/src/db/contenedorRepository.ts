@@ -6,6 +6,16 @@ export interface Contenedor {
   nombre: string;
   descripcion: string;
   ubicacion: string;
+  fecha_creacion: number; // timestamp Unix en segundos
+}
+
+export type CriterioOrden = 'nombre' | 'fecha_creacion' | 'cantidad_objetos';
+export type DireccionOrden = 'asc' | 'desc';
+
+export interface FiltroContenedor {
+  filtroUbicacion: string | null;
+  criterioOrden: CriterioOrden;
+  direccionOrden: DireccionOrden;
 }
 
 export async function getAllContenedores(db: SQLiteDatabase): Promise<Contenedor[]> {
@@ -22,11 +32,12 @@ export async function getContenedorById(db: SQLiteDatabase, id: number): Promise
 
 export async function insertContenedor(
   db: SQLiteDatabase,
-  data: Omit<Contenedor, 'id'>
+  data: Omit<Contenedor, 'id'> & { fecha_creacion?: number }
 ): Promise<number> {
+  const fecha_creacion = data.fecha_creacion ?? Math.floor(Date.now() / 1000);
   const result = await db.runAsync(
-    'INSERT INTO contenedor (nombre, descripcion, ubicacion) VALUES (?, ?, ?)',
-    data.nombre, data.descripcion, data.ubicacion
+    'INSERT INTO contenedor (nombre, descripcion, ubicacion, fecha_creacion) VALUES (?, ?, ?, ?)',
+    data.nombre, data.descripcion, data.ubicacion, fecha_creacion
   );
   return result.lastInsertRowId;
 }
@@ -44,6 +55,62 @@ export async function updateContenedor(
 
 export async function deleteContenedor(db: SQLiteDatabase, id: number): Promise<void> {
   await db.runAsync('DELETE FROM contenedor WHERE id = ?', id);
+}
+
+/**
+ * Retorna contenedores filtrados por ubicación y ordenados según los parámetros.
+ * La cláusula ORDER BY se construye con valores de enumeración validados,
+ * nunca interpolando texto arbitrario del usuario.
+ */
+export async function getContenedoresFiltrados(
+  db: SQLiteDatabase,
+  filtroUbicacion: string | null,
+  criterioOrden: CriterioOrden,
+  direccionOrden: DireccionOrden
+): Promise<Contenedor[]> {
+  // Whitelist mapping for ORDER BY column expression
+  const criterioMap: Record<CriterioOrden, string> = {
+    nombre: 'c.nombre',
+    fecha_creacion: 'c.fecha_creacion',
+    cantidad_objetos: '(SELECT COUNT(*) FROM objeto WHERE id_contenedor = c.id)',
+  };
+
+  // Whitelist mapping for direction
+  const direccionMap: Record<DireccionOrden, string> = {
+    asc: 'ASC',
+    desc: 'DESC',
+  };
+
+  // Validate against whitelists (TypeScript types already constrain this,
+  // but we guard at runtime too for safety)
+  const columnaOrden = criterioMap[criterioOrden];
+  const direccionSQL = direccionMap[direccionOrden];
+
+  if (!columnaOrden || !direccionSQL) {
+    throw new Error(`Parámetros de orden inválidos: ${criterioOrden}, ${direccionOrden}`);
+  }
+
+  if (filtroUbicacion !== null) {
+    return db.getAllAsync<Contenedor>(
+      `SELECT c.* FROM contenedor c WHERE LOWER(c.ubicacion) = LOWER(?) ORDER BY ${columnaOrden} ${direccionSQL}`,
+      filtroUbicacion
+    );
+  } else {
+    return db.getAllAsync<Contenedor>(
+      `SELECT c.* FROM contenedor c ORDER BY ${columnaOrden} ${direccionSQL}`
+    );
+  }
+}
+
+/**
+ * Retorna los valores de ubicación únicos (no vacíos) presentes en la tabla.
+ * Ordenados alfabéticamente.
+ */
+export async function getUbicacionesUnicas(db: SQLiteDatabase): Promise<string[]> {
+  const rows = await db.getAllAsync<{ ubicacion: string }>(
+    `SELECT DISTINCT ubicacion FROM contenedor WHERE ubicacion IS NOT NULL AND TRIM(ubicacion) != '' ORDER BY ubicacion ASC`
+  );
+  return rows.map((r) => r.ubicacion);
 }
 
 /**
