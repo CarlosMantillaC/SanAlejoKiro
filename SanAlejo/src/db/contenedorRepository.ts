@@ -1,4 +1,5 @@
 import { SQLiteDatabase } from 'expo-sqlite';
+import { deleteImageFromStorage } from '../utils/imageStorage';
 
 export interface Contenedor {
   id: number;
@@ -43,4 +44,32 @@ export async function updateContenedor(
 
 export async function deleteContenedor(db: SQLiteDatabase, id: number): Promise<void> {
   await db.runAsync('DELETE FROM contenedor WHERE id = ?', id);
+}
+
+/**
+ * Elimina un contenedor y antes limpia todos los archivos de imagen
+ * de sus objetos. Retorna las URIs procesadas (para logging/tests).
+ * Usa Promise.allSettled para tolerar fallos parciales en FileSystem.
+ * Si algún archivo no pudo eliminarse, `hadFileErrors` será `true`.
+ */
+export async function deleteContenedorConFotos(
+  db: SQLiteDatabase,
+  id: number,
+  fotoRepo: { getUrisByContenedor: (db: SQLiteDatabase, id_contenedor: number) => Promise<string[]> }
+): Promise<{ uris: string[]; hadFileErrors: boolean }> {
+  // 1. Get all photo URIs for this container's objects
+  const uris = await fotoRepo.getUrisByContenedor(db, id);
+
+  // 2. Delete files from FileSystem (tolerate partial failures)
+  let hadFileErrors = false;
+  if (uris.length > 0) {
+    const results = await Promise.allSettled(uris.map(uri => deleteImageFromStorage(uri)));
+    hadFileErrors = results.some(r => r.status === 'rejected');
+  }
+
+  // 3. Delete the container record (CASCADE deletes objects and objeto_foto rows)
+  await deleteContenedor(db, id);
+
+  // 4. Return the URIs that were processed and whether any file deletions failed
+  return { uris, hadFileErrors };
 }

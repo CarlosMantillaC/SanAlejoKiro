@@ -87,3 +87,52 @@ export async function searchObjetos(
     pattern, pattern
   );
 }
+
+// ---------------------------------------------------------------------------
+// Variantes con portada (primera foto de objeto_foto)
+// ---------------------------------------------------------------------------
+
+export interface ObjetoConPortada extends Objeto {
+  portada_uri: string | null;
+}
+
+export async function getObjetosConPortadaByContenedor(
+  db: SQLiteDatabase,
+  id_contenedor: number
+): Promise<ObjetoConPortada[]> {
+  return db.getAllAsync<ObjetoConPortada>(
+    `SELECT o.*,
+            (SELECT uri FROM objeto_foto
+             WHERE id_objeto = o.id
+             ORDER BY orden ASC
+             LIMIT 1) AS portada_uri
+     FROM objeto o
+     WHERE o.id_contenedor = ?
+     ORDER BY o.nombre ASC`,
+    id_contenedor
+  );
+}
+
+export interface ObjetoConContenedorYPortada extends ObjetoConContenedor {
+  portada_uri: string | null;
+}
+
+export async function searchObjetosConPortada(
+  db: SQLiteDatabase,
+  query: string
+): Promise<ObjetoConContenedorYPortada[]> {
+  const pattern = `%${query}%`;
+  return db.getAllAsync<ObjetoConContenedorYPortada>(
+    `SELECT o.*, c.nombre AS nombre_contenedor,
+            (SELECT uri FROM objeto_foto
+             WHERE id_objeto = o.id
+             ORDER BY orden ASC
+             LIMIT 1) AS portada_uri
+     FROM objeto o
+     JOIN contenedor c ON o.id_contenedor = c.id
+     WHERE o.nombre LIKE ? COLLATE NOCASE
+        OR o.descripcion LIKE ? COLLATE NOCASE
+     ORDER BY o.nombre ASC`,
+    pattern, pattern
+  );
+}

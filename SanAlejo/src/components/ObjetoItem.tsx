@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Objeto } from '../db/objetoRepository';
+import { ObjetoConPortada } from '../db/objetoRepository';
 import { Radii, Spacing, Typography } from '../theme';
 import { useTheme } from '../context/ThemeContext';
 
 interface ObjetoItemProps {
-  objeto: Objeto;
+  objeto: ObjetoConPortada;
   onEdit: () => void;
   onDelete: () => void;
   onPressFoto?: () => void;
@@ -22,7 +22,7 @@ export function ObjetoItem({ objeto, onEdit, onDelete, onPressFoto }: ObjetoItem
         { backgroundColor: colors.bgSurface, borderBottomColor: colors.borderSubtle },
       ]}
     >
-      {objeto.foto_uri !== null ? (
+      {objeto.portada_uri !== null ? (
         onPressFoto ? (
           <Pressable
             onPress={onPressFoto}
@@ -31,14 +31,14 @@ export function ObjetoItem({ objeto, onEdit, onDelete, onPressFoto }: ObjetoItem
             style={({ pressed }) => [pressed && styles.fotoPressed]}
           >
             <Image
-              source={{ uri: objeto.foto_uri }}
+              source={{ uri: objeto.portada_uri }}
               style={styles.foto}
               accessibilityLabel={`Foto de ${objeto.nombre}`}
             />
           </Pressable>
         ) : (
           <Image
-            source={{ uri: objeto.foto_uri }}
+            source={{ uri: objeto.portada_uri }}
             style={styles.foto}
             accessibilityLabel={`Foto de ${objeto.nombre}`}
           />
