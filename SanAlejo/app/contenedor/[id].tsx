@@ -11,11 +11,12 @@ import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router
 import { Ionicons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
 import { Contenedor, getContenedorById } from '../../src/db/contenedorRepository';
-import { Objeto, getObjetosByContenedor, deleteObjeto } from '../../src/db/objetoRepository';
+import { ObjetoConPortada, getObjetosConPortadaByContenedor, deleteObjeto } from '../../src/db/objetoRepository';
 import { ObjetoItem } from '../../src/components/ObjetoItem';
-import { ImageViewer } from '../../src/components/ImageViewer';
+import { VisorGaleria } from '../../src/components/VisorGaleria';
 import { ConfirmDialog } from '../../src/components/ConfirmDialog';
-import { deleteImageFromStorage } from '../../src/utils/imageStorage';
+import { getFotosByObjeto, getUrisByObjeto } from '../../src/db/fotoRepository';
+import { deleteImagesFromStorage } from '../../src/utils/imageStorage';
 import { Radii, Shadows, Spacing, Typography } from '../../src/theme';
 import { useTheme } from '../../src/context/ThemeContext';
 
@@ -25,18 +26,19 @@ export default function DetalleContenedor() {
   const { colors } = useTheme();
 
   const [contenedor, setContenedor] = useState<Contenedor | null>(null);
-  const [objetos, setObjetos] = useState<Objeto[]>([]);
+  const [objetos, setObjetos] = useState<ObjetoConPortada[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [objetoAEliminar, setObjetoAEliminar] = useState<Objeto | null>(null);
+  const [objetoAEliminar, setObjetoAEliminar] = useState<ObjetoConPortada | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [imagenVisorUri, setImagenVisorUri] = useState<string | null>(null);
+  const [visorFotos, setVisorFotos] = useState<Array<{ uri: string }>>([]);
+  const [visorVisible, setVisorVisible] = useState(false);
 
   async function cargarDatos() {
     try {
       const [cont, objs] = await Promise.all([
         getContenedorById(db, Number(id)),
-        getObjetosByContenedor(db, Number(id)),
+        getObjetosConPortadaByContenedor(db, Number(id)),
       ]);
       setContenedor(cont);
       setObjetos(objs);
@@ -51,11 +53,34 @@ export default function DetalleContenedor() {
   useEffect(() => { cargarDatos(); }, [id]);
   useFocusEffect(useCallback(() => { cargarDatos(); }, [db, id]));
 
+  async function handlePressFoto(objeto: ObjetoConPortada) {
+    try {
+      const fotos = await getFotosByObjeto(db, objeto.id);
+      if (fotos.length > 0) {
+        setVisorFotos(fotos.map(f => ({ uri: f.uri })));
+        setVisorVisible(true);
+      }
+    } catch { /* silencioso */ }
+  }
+
   async function handleConfirmarEliminar() {
     if (objetoAEliminar === null) return;
-    if (objetoAEliminar.foto_uri !== null) {
-      try { await deleteImageFromStorage(objetoAEliminar.foto_uri); } catch { /* silencioso */ }
+
+    // Get all photo URIs for this object
+    let uris: string[] = [];
+    try {
+      uris = await getUrisByObjeto(db, objetoAEliminar.id);
+    } catch { /* silencioso */ }
+
+    // Delete files (tolerate partial failures)
+    if (uris.length > 0) {
+      const results = await Promise.allSettled(uris.map(uri => deleteImagesFromStorage([uri])));
+      const anyFailed = results.some(r => r.status === 'rejected');
+      if (anyFailed) {
+        setDeleteError('Algunos archivos de imagen no pudieron eliminarse.');
+      }
     }
+
     try {
       await deleteObjeto(db, objetoAEliminar.id);
       setObjetoAEliminar(null);
@@ -136,7 +161,7 @@ export default function DetalleContenedor() {
                 objeto={item}
                 onEdit={() => router.push(`/contenedor/objeto/editar/${item.id}`)}
                 onDelete={() => setObjetoAEliminar(item)}
-                onPressFoto={item.foto_uri !== null ? () => setImagenVisorUri(item.foto_uri) : undefined}
+                onPressFoto={item.portada_uri !== null ? () => handlePressFoto(item) : undefined}
               />
             )}
             ListEmptyComponent={
@@ -151,10 +176,11 @@ export default function DetalleContenedor() {
             contentContainerStyle={objetos.length === 0 ? styles.emptyList : styles.list}
           />
 
-          <ImageViewer
-            uri={imagenVisorUri ?? ''}
-            visible={imagenVisorUri !== null}
-            onClose={() => setImagenVisorUri(null)}
+          <VisorGaleria
+            fotos={visorFotos}
+            initialIndex={0}
+            visible={visorVisible}
+            onClose={() => setVisorVisible(false)}
           />
 
           <Pressable

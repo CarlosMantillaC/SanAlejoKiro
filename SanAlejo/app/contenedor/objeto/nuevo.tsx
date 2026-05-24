@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -10,14 +10,15 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Stack, useLocalSearchParams, router } from 'expo-router';
+import { Stack, useLocalSearchParams, router, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
 import { insertObjeto } from '../../../src/db/objetoRepository';
-import { copyImageToStorage } from '../../../src/utils/imageStorage';
+import { insertFotos } from '../../../src/db/fotoRepository';
+import { deleteImagesFromStorage } from '../../../src/utils/imageStorage';
 import { validateFields } from '../../../src/utils/validator';
-import { ImagePickerButton } from '../../../src/components/ImagePickerButton';
-import { ImageViewer } from '../../../src/components/ImageViewer';
+import { GaleriaEditor, FotoLocal } from '../../../src/components/GaleriaEditor';
+import { VisorGaleria } from '../../../src/components/VisorGaleria';
 import { Radii, Spacing, Typography } from '../../../src/theme';
 import { useTheme } from '../../../src/context/ThemeContext';
 
@@ -25,32 +26,39 @@ export default function NuevoObjeto() {
   const { id_contenedor } = useLocalSearchParams<{ id_contenedor: string }>();
   const db = useSQLiteContext();
   const { colors } = useTheme();
+  const navigation = useNavigation();
 
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
-  const [fotoUri, setFotoUri] = useState<string | null>(null);
-  const [imageViewerVisible, setImageViewerVisible] = useState(false);
+  const [fotos, setFotos] = useState<FotoLocal[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [dbError, setDbError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [visorIndex, setVisorIndex] = useState(0);
+  const [visorVisible, setVisorVisible] = useState(false);
+  // Flag to prevent beforeRemove from deleting photos after a successful save
+  const savedRef = useRef(false);
+
+  // Keep a ref to fotos so the beforeRemove listener always sees the latest value
+  const fotosRef = useRef(fotos);
+  useEffect(() => { fotosRef.current = fotos; }, [fotos]);
+
+  // Clean up new (unsaved) photos when navigating back WITHOUT saving
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', async () => {
+      if (savedRef.current) return; // saved successfully — keep the files
+      const newUris = fotosRef.current.filter(f => f.isNew).map(f => f.uri);
+      if (newUris.length > 0) {
+        try { await deleteImagesFromStorage(newUris); } catch { /* silencioso */ }
+      }
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   function clearError(key: string) {
     if (errors[key]) {
       setErrors((prev) => { const n = { ...prev }; delete n[key]; return n; });
     }
-  }
-
-  async function handleImageSelected(uri: string) {
-    try {
-      const stored = await copyImageToStorage(uri);
-      setFotoUri(stored);
-    } catch {
-      setDbError('No se pudo procesar la foto. El objeto se guardará sin imagen.');
-    }
-  }
-
-  function handlePermissionDenied() {
-    setDbError('Debes conceder permiso de acceso a la galería o cámara en la configuración del dispositivo.');
   }
 
   async function handleGuardar() {
@@ -60,7 +68,9 @@ export default function NuevoObjeto() {
     setSaving(true);
     setDbError(null);
     try {
-      await insertObjeto(db, { nombre, descripcion, id_contenedor: Number(id_contenedor), foto_uri: fotoUri });
+      const nuevoId = await insertObjeto(db, { nombre, descripcion, id_contenedor: Number(id_contenedor), foto_uri: null });
+      await insertFotos(db, nuevoId, fotos.map(f => f.uri));
+      savedRef.current = true; // mark as saved so beforeRemove won't delete files
       router.back();
     } catch {
       setDbError('No se pudo guardar el objeto.');
@@ -125,21 +135,16 @@ export default function NuevoObjeto() {
           <View style={[styles.divider, { backgroundColor: colors.borderSubtle }]} />
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.textMuted }]}>Foto (opcional)</Text>
-            <ImagePickerButton
-              currentUri={fotoUri}
-              onImageSelected={handleImageSelected}
-              onPermissionDenied={handlePermissionDenied}
-              onPreviewPress={fotoUri !== null ? () => setImageViewerVisible(true) : undefined}
+            <Text style={[styles.label, { color: colors.textMuted }]}>Fotos (opcional)</Text>
+            <GaleriaEditor
+              fotos={fotos}
+              onFotosChange={setFotos}
+              onPressFoto={(index) => { setVisorIndex(index); setVisorVisible(true); }}
+              onPermissionDenied={() => setDbError('Debes conceder permiso de acceso a la galería o cámara en la configuración del dispositivo.')}
+              onError={(msg) => setDbError(msg)}
             />
           </View>
         </View>
-
-        <ImageViewer
-          uri={fotoUri ?? ''}
-          visible={imageViewerVisible && fotoUri !== null}
-          onClose={() => setImageViewerVisible(false)}
-        />
 
         <Pressable
           style={({ pressed }) => [
@@ -159,6 +164,13 @@ export default function NuevoObjeto() {
         </Pressable>
 
       </ScrollView>
+
+      <VisorGaleria
+        fotos={fotos.map(f => ({ uri: f.uri }))}
+        initialIndex={visorIndex}
+        visible={visorVisible}
+        onClose={() => setVisorVisible(false)}
+      />
     </KeyboardAvoidingView>
   );
 }

@@ -3,9 +3,8 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
-import { Contenedor, getAllContenedores, deleteContenedor } from '../src/db/contenedorRepository';
-import { getObjetosFotoUriByContenedor } from '../src/db/objetoRepository';
-import { deleteImagesFromStorage } from '../src/utils/imageStorage';
+import { Contenedor, getAllContenedores, deleteContenedorConFotos } from '../src/db/contenedorRepository';
+import * as fotoRepository from '../src/db/fotoRepository';
 import { ContenedorItem } from '../src/components/ContenedorItem';
 import { ConfirmDialog } from '../src/components/ConfirmDialog';
 import { FAB } from '../src/components/FAB';
@@ -36,12 +35,11 @@ export default function ListaContenedores() {
   async function handleConfirmarEliminar() {
     if (contenedorAEliminar === null) return;
     try {
-      const uris = await getObjetosFotoUriByContenedor(db, contenedorAEliminar.id);
-      if (uris.length > 0) {
-        try { await deleteImagesFromStorage(uris); } catch { /* silencioso */ }
-      }
-      await deleteContenedor(db, contenedorAEliminar.id);
+      const { hadFileErrors } = await deleteContenedorConFotos(db, contenedorAEliminar.id, fotoRepository);
       setContenedorAEliminar(null);
+      if (hadFileErrors) {
+        setDeleteError('El contenedor fue eliminado, pero algunos archivos de imagen no pudieron eliminarse del dispositivo.');
+      }
       cargarContenedores();
     } catch {
       setDeleteError('No se pudo eliminar el contenedor.');

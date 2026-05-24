@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -10,14 +10,15 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Stack, useLocalSearchParams, router } from 'expo-router';
+import { Stack, useLocalSearchParams, router, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
 import { getObjetoById, updateObjeto } from '../../../../src/db/objetoRepository';
-import { copyImageToStorage, deleteImageFromStorage } from '../../../../src/utils/imageStorage';
+import { getFotosByObjeto, syncFotos } from '../../../../src/db/fotoRepository';
+import { deleteImagesFromStorage } from '../../../../src/utils/imageStorage';
 import { validateFields } from '../../../../src/utils/validator';
-import { ImagePickerButton } from '../../../../src/components/ImagePickerButton';
-import { ImageViewer } from '../../../../src/components/ImageViewer';
+import { GaleriaEditor, FotoLocal } from '../../../../src/components/GaleriaEditor';
+import { VisorGaleria } from '../../../../src/components/VisorGaleria';
 import { Radii, Spacing, Typography } from '../../../../src/theme';
 import { useTheme } from '../../../../src/context/ThemeContext';
 
@@ -25,15 +26,36 @@ export default function EditarObjeto() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const db = useSQLiteContext();
   const { colors } = useTheme();
+  const navigation = useNavigation();
 
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
-  const [fotoUri, setFotoUri] = useState<string | null>(null);
+  const [fotos, setFotos] = useState<FotoLocal[]>([]);
+  const [initialFotos, setInitialFotos] = useState<FotoLocal[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [dbError, setDbError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [imageViewerVisible, setImageViewerVisible] = useState(false);
+  const [visorIndex, setVisorIndex] = useState(0);
+  const [visorVisible, setVisorVisible] = useState(false);
+  // Flag to prevent beforeRemove from deleting photos after a successful save
+  const savedRef = useRef(false);
+
+  // Keep a ref to fotos so the beforeRemove listener always sees the latest value
+  const fotosRef = useRef(fotos);
+  useEffect(() => { fotosRef.current = fotos; }, [fotos]);
+
+  // Clean up new (unsaved) photos when navigating back WITHOUT saving
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', async () => {
+      if (savedRef.current) return; // saved successfully — keep the files
+      const newUris = fotosRef.current.filter(f => f.isNew).map(f => f.uri);
+      if (newUris.length > 0) {
+        try { await deleteImagesFromStorage(newUris); } catch { /* silencioso */ }
+      }
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   function clearError(key: string) {
     if (errors[key]) {
@@ -44,8 +66,14 @@ export default function EditarObjeto() {
   useEffect(() => {
     async function cargar() {
       try {
-        const obj = await getObjetoById(db, Number(id));
-        if (obj) { setNombre(obj.nombre); setDescripcion(obj.descripcion); setFotoUri(obj.foto_uri); }
+        const [obj, fotosDb] = await Promise.all([
+          getObjetoById(db, Number(id)),
+          getFotosByObjeto(db, Number(id)),
+        ]);
+        if (obj) { setNombre(obj.nombre); setDescripcion(obj.descripcion); }
+        const fotosLocales: FotoLocal[] = fotosDb.map(f => ({ id: f.id, uri: f.uri, isNew: false }));
+        setFotos(fotosLocales);
+        setInitialFotos(fotosLocales);
       } catch {
         setDbError('No se pudo cargar el objeto.');
       } finally {
@@ -55,22 +83,6 @@ export default function EditarObjeto() {
     cargar();
   }, [id]);
 
-  async function handleImageSelected(uri: string) {
-    if (fotoUri !== null) {
-      try { await deleteImageFromStorage(fotoUri); } catch { /* silencioso */ }
-    }
-    try {
-      const stored = await copyImageToStorage(uri);
-      setFotoUri(stored);
-    } catch {
-      setDbError('No se pudo procesar la foto. El objeto se guardará sin imagen.');
-    }
-  }
-
-  function handlePermissionDenied() {
-    setDbError('Debes conceder permiso de acceso a la galería o cámara en la configuración del dispositivo.');
-  }
-
   async function handleGuardar() {
     const { valid, errors: ve } = validateFields({ nombre, descripcion });
     if (!valid) { setErrors(ve); return; }
@@ -78,7 +90,28 @@ export default function EditarObjeto() {
     setSaving(true);
     setDbError(null);
     try {
-      await updateObjeto(db, Number(id), { nombre, descripcion, foto_uri: fotoUri });
+      // Compute what changed
+      const currentIds = new Set(fotos.filter(f => f.id !== null).map(f => f.id as number));
+      const deletedIds = initialFotos
+        .filter(f => f.id !== null && !currentIds.has(f.id as number))
+        .map(f => f.id as number);
+      const removedUris = initialFotos
+        .filter(f => f.id !== null && !currentIds.has(f.id as number))
+        .map(f => f.uri);
+      const newUris = fotos.filter(f => f.isNew).map(f => f.uri);
+      const orderedIds = fotos
+        .filter(f => f.id !== null && !f.isNew)
+        .map(f => f.id as number);
+
+      await updateObjeto(db, Number(id), { nombre, descripcion, foto_uri: null });
+      await syncFotos(db, Number(id), deletedIds, newUris, orderedIds);
+
+      // Clean up removed files
+      if (removedUris.length > 0) {
+        try { await deleteImagesFromStorage(removedUris); } catch { /* silencioso */ }
+      }
+
+      savedRef.current = true; // mark as saved so beforeRemove won't delete files
       router.back();
     } catch {
       setDbError('No se pudo guardar el objeto.');
@@ -153,21 +186,16 @@ export default function EditarObjeto() {
           <View style={[styles.divider, { backgroundColor: colors.borderSubtle }]} />
 
           <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.textMuted }]}>Foto (opcional)</Text>
-            <ImagePickerButton
-              currentUri={fotoUri}
-              onImageSelected={handleImageSelected}
-              onPermissionDenied={handlePermissionDenied}
-              onPreviewPress={fotoUri !== null ? () => setImageViewerVisible(true) : undefined}
+            <Text style={[styles.label, { color: colors.textMuted }]}>Fotos (opcional)</Text>
+            <GaleriaEditor
+              fotos={fotos}
+              onFotosChange={setFotos}
+              onPressFoto={(index) => { setVisorIndex(index); setVisorVisible(true); }}
+              onPermissionDenied={() => setDbError('Debes conceder permiso de acceso a la galería o cámara en la configuración del dispositivo.')}
+              onError={(msg) => setDbError(msg)}
             />
           </View>
         </View>
-
-        <ImageViewer
-          uri={fotoUri ?? ''}
-          visible={imageViewerVisible && fotoUri !== null}
-          onClose={() => setImageViewerVisible(false)}
-        />
 
         <Pressable
           style={({ pressed }) => [
@@ -187,6 +215,13 @@ export default function EditarObjeto() {
         </Pressable>
 
       </ScrollView>
+
+      <VisorGaleria
+        fotos={fotos.map(f => ({ uri: f.uri }))}
+        initialIndex={visorIndex}
+        visible={visorVisible}
+        onClose={() => setVisorVisible(false)}
+      />
     </KeyboardAvoidingView>
   );
 }

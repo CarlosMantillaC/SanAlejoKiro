@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { FlatList, StyleSheet, Text, TextInput, Pressable, View } from 'react-native';
+import { FlatList, Image, StyleSheet, Text, TextInput, Pressable, View } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
-import { ObjetoConContenedor, searchObjetos } from '../src/db/objetoRepository';
+import { ObjetoConContenedorYPortada, searchObjetosConPortada } from '../src/db/objetoRepository';
 import { Radii, Shadows, Spacing, Typography } from '../src/theme';
 import { useTheme } from '../src/context/ThemeContext';
 
@@ -11,7 +11,7 @@ export default function Busqueda() {
   const db = useSQLiteContext();
   const { colors } = useTheme();
   const [query, setQuery] = useState('');
-  const [resultados, setResultados] = useState<ObjetoConContenedor[]>([]);
+  const [resultados, setResultados] = useState<ObjetoConContenedorYPortada[]>([]);
   const [buscando, setBuscando] = useState(false);
 
   async function handleChangeText(texto: string) {
@@ -22,7 +22,7 @@ export default function Busqueda() {
     }
     setBuscando(true);
     try {
-      const encontrados = await searchObjetos(db, texto);
+      const encontrados = await searchObjetosConPortada(db, texto);
       setResultados(encontrados);
     } catch {
       setResultados([]);
@@ -77,21 +77,36 @@ export default function Busqueda() {
             accessibilityRole="button"
             accessibilityLabel={`Ir al contenedor de ${item.nombre}`}
           >
-            <View style={styles.resultMain}>
-              <Text style={[styles.nombreObjeto, { color: colors.textPrimary }]} numberOfLines={1}>
-                {item.nombre}
-              </Text>
-              {item.descripcion ? (
-                <Text style={[styles.descripcionObjeto, { color: colors.textSecondary }]} numberOfLines={2}>
-                  {item.descripcion}
-                </Text>
-              ) : null}
-            </View>
-            <View style={[styles.contenedorBadge, { backgroundColor: colors.accentMuted }]}>
-              <Ionicons name="cube-outline" size={11} color={colors.accentLight} />
-              <Text style={[styles.contenedorBadgeText, { color: colors.accentLight }]} numberOfLines={1}>
-                {item.nombre_contenedor}
-              </Text>
+            <View style={styles.resultCardInner}>
+              {item.portada_uri !== null ? (
+                <Image
+                  source={{ uri: item.portada_uri }}
+                  style={styles.resultThumbnail}
+                  accessibilityLabel={`Foto de ${item.nombre}`}
+                />
+              ) : (
+                <View style={[styles.resultThumbnailPlaceholder, { backgroundColor: colors.bgMuted }]}>
+                  <Ionicons name="cube-outline" size={22} color={colors.textMuted} />
+                </View>
+              )}
+              <View style={styles.resultContent}>
+                <View style={styles.resultMain}>
+                  <Text style={[styles.nombreObjeto, { color: colors.textPrimary }]} numberOfLines={1}>
+                    {item.nombre}
+                  </Text>
+                  {item.descripcion ? (
+                    <Text style={[styles.descripcionObjeto, { color: colors.textSecondary }]} numberOfLines={2}>
+                      {item.descripcion}
+                    </Text>
+                  ) : null}
+                </View>
+                <View style={[styles.contenedorBadge, { backgroundColor: colors.accentMuted }]}>
+                  <Ionicons name="cube-outline" size={11} color={colors.accentLight} />
+                  <Text style={[styles.contenedorBadgeText, { color: colors.accentLight }]} numberOfLines={1}>
+                    {item.nombre_contenedor}
+                  </Text>
+                </View>
+              </View>
             </View>
           </Pressable>
         )}
@@ -170,6 +185,27 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderWidth: 1,
     ...Shadows.sm,
+  },
+  resultCardInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  resultThumbnail: {
+    width: 52,
+    height: 52,
+    borderRadius: Radii.md,
+    marginRight: Spacing.md,
+  },
+  resultThumbnailPlaceholder: {
+    width: 52,
+    height: 52,
+    borderRadius: Radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.md,
+  },
+  resultContent: {
+    flex: 1,
   },
   resultMain: {
     marginBottom: Spacing.sm,
