@@ -1,4 +1,4 @@
-# Plan de Implementación: Multi-Foto por Objeto
+KKKKK# Plan de Implementación: Multi-Foto por Objeto
 
 ## Overview
 
@@ -6,7 +6,7 @@ Implementación incremental de la galería de fotos por objeto en la app San Ale
 
 ## Tasks
 
-- [ ] 1. Migración de base de datos a versión 3
+- [x] 1. Migración de base de datos a versión 3
   - Actualizar `DATABASE_VERSION` de `2` a `3` en `src/db/schema.ts`
   - Agregar la rama `user_version === 2` en `initializeDatabase()` que:
     - Crea la tabla `objeto_foto` con columnas `id`, `id_objeto` (FK ON DELETE CASCADE), `uri`, `orden`
@@ -34,7 +34,7 @@ Implementación incremental de la galería de fotos por objeto en la app San Ale
     - **Validates: Requirements 1.1, 1.3, 6.3, 7.3**
     - Ubicar en `__tests__/smoke/database.test.ts` (extender el archivo existente)
 
-- [ ] 2. Implementar `fotoRepository` (`src/db/fotoRepository.ts`)
+- [x] 2. Implementar `fotoRepository` (`src/db/fotoRepository.ts`)
   - Definir la interfaz `FotoObjeto { id, id_objeto, uri, orden }`
   - Implementar `getFotosByObjeto(db, id_objeto)`: SELECT ordenado por `orden` ASC
   - Implementar `insertFotos(db, id_objeto, uris)`: INSERT de N filas con `orden` 0-indexed
@@ -74,10 +74,10 @@ Implementación incremental de la galería de fotos por objeto en la app San Ale
     - **Validates: Requirements 4.3**
     - Ubicar en `__tests__/unit/fotoRepository.test.ts`
 
-- [ ] 3. Checkpoint — Verificar capa de datos
+- [x] 3. Checkpoint — Verificar capa de datos
   - Asegurar que todos los tests de `schema.test.ts` y `fotoRepository.test.ts` pasan. Consultar al usuario si hay dudas antes de continuar.
 
-- [ ] 4. Extender `objetoRepository` con variantes que incluyen portada
+- [x] 4. Extender `objetoRepository` con variantes que incluyen portada
   - Definir `ObjetoConPortada extends Objeto { portada_uri: string | null }`
   - Implementar `getObjetosConPortadaByContenedor(db, id_contenedor)`: SELECT con subconsulta de portada
   - Definir `ObjetoConContenedorYPortada extends ObjetoConContenedor { portada_uri: string | null }`
@@ -91,7 +91,7 @@ Implementación incremental de la galería de fotos por objeto en la app San Ale
     - **Validates: Requirements 8.3**
     - Ubicar en `__tests__/unit/objetoRepository.test.ts` (extender el archivo existente)
 
-- [ ] 5. Extender `contenedorRepository` con eliminación que limpia fotos
+- [x] 5. Extender `contenedorRepository` con eliminación que limpia fotos
   - Implementar `deleteContenedorConFotos(db, id, fotoRepo)` en `src/db/contenedorRepository.ts`:
     - Obtiene todas las URIs del contenedor via `fotoRepo.getUrisByContenedor`
     - Elimina los archivos con `deleteImagesFromStorage` (usando `Promise.allSettled` para tolerar fallos parciales)
@@ -99,7 +99,7 @@ Implementación incremental de la galería de fotos por objeto en la app San Ale
     - Retorna las URIs procesadas
   - _Requirements: 7.1, 7.2, 7.3, 7.4_
 
-- [ ] 6. Implementar el componente `GaleriaEditor` (`src/components/GaleriaEditor.tsx`)
+- [x] 6. Implementar el componente `GaleriaEditor` (`src/components/GaleriaEditor.tsx`)
   - Definir la interfaz `FotoLocal { id: number | null, uri: string, isNew: boolean }`
   - Definir las props `GaleriaEditorProps { fotos, onFotosChange, onPermissionDenied, onError }`
   - Renderizar las miniaturas en un `ScrollView` horizontal con botón de eliminar (ícono de papelera) por foto
@@ -132,7 +132,7 @@ Implementación incremental de la galería de fotos por objeto en la app San Ale
     - Verificar que se muestra mensaje al fallar la copia de archivo (Req. 2.8)
     - Ubicar en `__tests__/components/GaleriaEditor.test.tsx`
 
-- [ ] 7. Implementar el componente `VisorGaleria` (`src/components/VisorGaleria.tsx`)
+- [x] 7. Implementar el componente `VisorGaleria` (`src/components/VisorGaleria.tsx`)
   - Definir las props `VisorGaleriaProps { fotos: Array<{ uri: string }>, initialIndex, visible, onClose }`
   - Implementar un `FlatList` horizontal con `pagingEnabled` para navegar entre fotos
   - Cada ítem del `FlatList` reutiliza la lógica de zoom/pan de `ImageViewer` (pinch, doble tap, arrastre) sin el wrapper `Modal`
@@ -152,7 +152,7 @@ Implementación incremental de la galería de fotos por objeto en la app San Ale
     - **Validates: Requirements 5.6**
     - Ubicar en `__tests__/components/VisorGaleria.test.tsx`
 
-- [ ] 8. Actualizar `ObjetoItem` para usar `ObjetoConPortada`
+- [x] 8. Actualizar `ObjetoItem` para usar `ObjetoConPortada`
   - Cambiar el tipo de la prop `objeto` de `Objeto` a `ObjetoConPortada` en `src/components/ObjetoItem.tsx`
   - Reemplazar `objeto.foto_uri` por `objeto.portada_uri` en la lógica de renderizado de miniatura
   - Mantener el comportamiento de placeholder cuando `portada_uri` es `null`
@@ -164,10 +164,10 @@ Implementación incremental de la galería de fotos por objeto en la app San Ale
     - **Validates: Requirements 4.1, 4.2, 8.1, 8.2**
     - Ubicar en `__tests__/components/ObjetoItem.test.tsx` (extender el archivo existente)
 
-- [ ] 9. Checkpoint — Verificar componentes y repositorios extendidos
+- [x] 9. Checkpoint — Verificar componentes y repositorios extendidos
   - Asegurar que todos los tests de componentes y repositorios pasan. Consultar al usuario si hay dudas antes de continuar.
 
-- [ ] 10. Actualizar la pantalla `nuevo.tsx` para usar `GaleriaEditor`
+- [x] 10. Actualizar la pantalla `nuevo.tsx` para usar `GaleriaEditor`
   - Reemplazar el estado `fotoUri: string | null` por `fotos: FotoLocal[]` en `app/contenedor/objeto/nuevo.tsx`
   - Reemplazar el bloque `ImagePickerButton` + `ImageViewer` por el componente `GaleriaEditor`
   - Al guardar: llamar `insertObjeto` (sin `foto_uri`) y luego `insertFotos(db, nuevoId, fotos.map(f => f.uri))`
@@ -192,7 +192,7 @@ Implementación incremental de la galería de fotos por objeto en la app San Ale
     - **Validates: Requirements 3.7**
     - Ubicar en `__tests__/screens/FormularioObjeto.test.tsx` (extender el archivo existente)
 
-- [ ] 11. Actualizar la pantalla `editar/[id].tsx` para usar `GaleriaEditor`
+- [x] 11. Actualizar la pantalla `editar/[id].tsx` para usar `GaleriaEditor`
   - Reemplazar el estado `fotoUri: string | null` por `fotos: FotoLocal[]` en `app/contenedor/objeto/editar/[id].tsx`
   - Al cargar: llamar `getFotosByObjeto(db, id)` y mapear a `FotoLocal[]` con `isNew: false`
   - Reemplazar el bloque `ImagePickerButton` + `ImageViewer` por el componente `GaleriaEditor`
@@ -201,7 +201,7 @@ Implementación incremental de la galería de fotos por objeto en la app San Ale
   - Manejar errores de BD mostrando el banner de error existente
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
 
-- [ ] 12. Actualizar la pantalla `contenedor/[id].tsx` para usar galería multi-foto
+- [x] 12. Actualizar la pantalla `contenedor/[id].tsx` para usar galería multi-foto
   - Cambiar la llamada de `getObjetosByContenedor` a `getObjetosConPortadaByContenedor` en `app/contenedor/[id].tsx`
   - Actualizar el tipo del estado `objetos` de `Objeto[]` a `ObjetoConPortada[]`
   - Reemplazar `ImageViewer` por `VisorGaleria` para la visualización de fotos
@@ -215,13 +215,13 @@ Implementación incremental de la galería de fotos por objeto en la app San Ale
     - **Validates: Requirements 6.4**
     - Ubicar en `__tests__/screens/DetalleContenedor.test.tsx` (extender el archivo existente)
 
-- [ ] 13. Actualizar la pantalla `busqueda.tsx` para mostrar portada en resultados
+- [x] 13. Actualizar la pantalla `busqueda.tsx` para mostrar portada en resultados
   - Cambiar la llamada de `searchObjetos` a `searchObjetosConPortada` en `app/busqueda.tsx`
   - Actualizar el tipo del estado `resultados` de `ObjetoConContenedor[]` a `ObjetoConContenedorYPortada[]`
   - Agregar miniatura de portada en cada `resultCard`: si `portada_uri` es no nula mostrar `Image`, si es nula mostrar el ícono de placeholder
   - _Requirements: 8.1, 8.2, 8.3_
 
-- [ ] 14. Actualizar la pantalla `app/index.tsx` y `contenedor/editar/[id].tsx` para usar `deleteContenedorConFotos`
+- [x] 14. Actualizar la pantalla `app/index.tsx` y `contenedor/editar/[id].tsx` para usar `deleteContenedorConFotos`
   - Localizar los puntos donde se llama `deleteContenedor` en las pantallas de listado y edición de contenedores
   - Reemplazar por `deleteContenedorConFotos(db, id, fotoRepository)` pasando el módulo `fotoRepository`
   - Mostrar mensaje informativo si falla la eliminación de archivos (sin bloquear la eliminación del registro)
@@ -232,7 +232,7 @@ Implementación incremental de la galería de fotos por objeto en la app San Ale
     - **Validates: Requirements 7.4**
     - Ubicar en el test de pantalla correspondiente
 
-- [ ] 15. Checkpoint final — Verificar integración completa
+- [x] 15. Checkpoint final — Verificar integración completa
   - Ejecutar la suite completa de tests con `jest --runInBand` y asegurar que todos pasan
   - Verificar que los tests existentes en `__tests__/` no se rompieron por los cambios
   - Consultar al usuario si hay dudas antes de dar por completada la implementación.
