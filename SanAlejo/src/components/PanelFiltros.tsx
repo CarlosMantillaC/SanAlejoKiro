@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Modal,
   View,
@@ -12,6 +12,9 @@ import { Radii, Shadows, Spacing, Typography } from '../theme';
 import { useTheme } from '../context/ThemeContext';
 import { CriterioOrden } from '../db/contenedorRepository';
 import { SortFilterState } from '../hooks/useSortFilter';
+import { useSQLiteContext } from 'expo-sqlite';
+import { listAllEtiquetas, Etiqueta } from '../db/etiquetaRepository';
+import { subscribe } from '../utils/pubsub';
 
 interface PanelFiltrosProps {
   visible: boolean;
@@ -20,6 +23,8 @@ interface PanelFiltrosProps {
   ubicaciones: string[];
   onCriterioChange: (criterio: CriterioOrden) => void;
   onUbicacionChange: (ubicacion: string | null) => void;
+  selectedEtiquetaIds?: number[];
+  onEtiquetasChange?: (ids: number[] | undefined) => void;
   onReset: () => void;
   isNonDefault: boolean;
 }
@@ -42,13 +47,40 @@ export function PanelFiltros({
   ubicaciones,
   onCriterioChange,
   onUbicacionChange,
+  selectedEtiquetaIds,
+  onEtiquetasChange,
   onReset,
   isNonDefault,
 }: PanelFiltrosProps): JSX.Element {
   const { colors } = useTheme();
+  const db = useSQLiteContext();
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([]);
 
   const directionIcon = state.direccionOrden === 'asc' ? '↑' : '↓';
   const directionLabel = state.direccionOrden === 'asc' ? 'ascendente' : 'descendente';
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await listAllEtiquetas(db);
+        if (!cancelled) setEtiquetas(list);
+      } catch {
+        if (!cancelled) setEtiquetas([]);
+      }
+    })();
+    const unsub = subscribe('etiquetas:changed', () => {
+      (async () => {
+        try {
+          const list = await listAllEtiquetas(db);
+          if (!cancelled) setEtiquetas(list);
+        } catch {
+          if (!cancelled) setEtiquetas([]);
+        }
+      })();
+    });
+    return () => { cancelled = true; unsub(); };
+  }, [db]);
 
   return (
     <Modal
@@ -191,6 +223,67 @@ export function PanelFiltros({
                           ]}
                         >
                           {ubicacion}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+
+            {/* ── Sección: Filtrar por etiquetas (si hay etiquetas) ── */}
+            {etiquetas.length > 0 && (
+              <>
+                <Text
+                  style={[
+                    styles.sectionLabel,
+                    { color: colors.textMuted, marginTop: Spacing.xl },
+                  ]}
+                >
+                  Filtrar por etiquetas
+                </Text>
+                <View style={styles.chipList}>
+                  {etiquetas.map((et) => {
+                    const isSelected = (selectedEtiquetaIds ?? state.filtroEtiquetas ?? []).includes(et.id);
+                    return (
+                      <Pressable
+                        key={et.id}
+                        onPress={() => {
+                          const current = new Set(selectedEtiquetaIds ?? state.filtroEtiquetas ?? []);
+                          if (current.has(et.id)) current.delete(et.id);
+                          else current.add(et.id);
+                          const next = Array.from(current).sort((a, b) => a - b);
+                          onEtiquetasChange ? onEtiquetasChange(next.length ? next : undefined) : null;
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={
+                          isSelected
+                            ? `Etiqueta ${et.nombre}, seleccionada. Toca para quitar el filtro`
+                            : `Filtrar por etiqueta ${et.nombre}`
+                        }
+                        style={({ pressed }) => [
+                          styles.chip,
+                          {
+                            backgroundColor: isSelected
+                              ? colors.accent
+                              : pressed
+                              ? colors.bgMuted
+                              : colors.bgSurface,
+                            borderColor: isSelected ? colors.accent : colors.border,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.chipText,
+                            {
+                              color: isSelected
+                                ? colors.textOnAccent
+                                : colors.textPrimary,
+                            },
+                          ]}
+                        >
+                          {et.nombre}
                         </Text>
                       </Pressable>
                     );

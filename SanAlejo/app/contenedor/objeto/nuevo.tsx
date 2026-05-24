@@ -15,6 +15,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
 import { insertObjeto } from '../../../src/db/objetoRepository';
 import { insertFotos } from '../../../src/db/fotoRepository';
+import { setEtiquetasForObjeto } from '../../../src/db/objetoEtiquetaRepository';
+import { Etiqueta } from '../../../src/db/etiquetaRepository';
+import TagPicker from '../../../src/components/TagPicker';
 import { deleteImagesFromStorage } from '../../../src/utils/imageStorage';
 import { validateFields } from '../../../src/utils/validator';
 import { GaleriaEditor, FotoLocal } from '../../../src/components/GaleriaEditor';
@@ -31,6 +34,7 @@ export default function NuevoObjeto() {
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [fotos, setFotos] = useState<FotoLocal[]>([]);
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [dbError, setDbError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -70,6 +74,10 @@ export default function NuevoObjeto() {
     try {
       const nuevoId = await insertObjeto(db, { nombre, descripcion, id_contenedor: Number(id_contenedor), foto_uri: null });
       await insertFotos(db, nuevoId, fotos.map(f => f.uri));
+      if (etiquetas.length > 0) {
+        const ids = etiquetas.map(e => e.id);
+        await setEtiquetasForObjeto(db, nuevoId, ids);
+      }
       savedRef.current = true; // mark as saved so beforeRemove won't delete files
       router.back();
     } catch {
@@ -143,6 +151,13 @@ export default function NuevoObjeto() {
               onPermissionDenied={() => setDbError('Debes conceder permiso de acceso a la galería o cámara en la configuración del dispositivo.')}
               onError={(msg) => setDbError(msg)}
             />
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: colors.borderSubtle }]} />
+
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: colors.textMuted }]}>Etiquetas (opcional)</Text>
+            <TagPicker selected={etiquetas} onChange={setEtiquetas} placeholder="Agregar etiqueta" />
           </View>
         </View>
 

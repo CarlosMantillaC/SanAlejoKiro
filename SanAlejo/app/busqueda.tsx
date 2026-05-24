@@ -1,9 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FlatList, Image, StyleSheet, Text, TextInput, Pressable, View } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
-import { ObjetoConContenedorYPortada, searchObjetosConPortada } from '../src/db/objetoRepository';
+import {
+  ObjetoConContenedorYPortada,
+  searchObjetosConPortada,
+  searchObjetosConPortadaWithEtiquetas,
+} from '../src/db/objetoRepository';
+import { searchEtiquetas, listAllEtiquetas, Etiqueta } from '../src/db/etiquetaRepository';
+import { subscribe } from '../src/utils/pubsub';
 import { Radii, Shadows, Spacing, Typography } from '../src/theme';
 import { useTheme } from '../src/context/ThemeContext';
 
@@ -13,19 +19,84 @@ export default function Busqueda() {
   const [query, setQuery] = useState('');
   const [resultados, setResultados] = useState<ObjetoConContenedorYPortada[]>([]);
   const [buscando, setBuscando] = useState(false);
+  const [etiquetasSugeridas, setEtiquetasSugeridas] = useState<Etiqueta[]>([]);
+  const [selectedEtiquetaId, setSelectedEtiquetaId] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const all = await listAllEtiquetas(db);
+        if (!cancelled) setEtiquetasSugeridas(all.slice(0, 16));
+      } catch {
+        if (!cancelled) setEtiquetasSugeridas([]);
+      }
+    })();
+    const unsub = subscribe('etiquetas:changed', () => {
+      (async () => {
+        try {
+          const all = await listAllEtiquetas(db);
+          if (!cancelled) setEtiquetasSugeridas(all.slice(0, 16));
+        } catch {
+          if (!cancelled) setEtiquetasSugeridas([]);
+        }
+      })();
+    });
+    return () => { cancelled = true; unsub(); };
+  }, [db]);
 
   async function handleChangeText(texto: string) {
     setQuery(texto);
     if (texto.trim().length === 0) {
       setResultados([]);
+      // keep etiquetasSugeridas loaded so legend + chips remain visible on empty query
       return;
     }
     setBuscando(true);
     try {
-      const encontrados = await searchObjetosConPortada(db, texto);
-      setResultados(encontrados);
+      // If the query exactly matches an etiqueta name, search by etiqueta
+      const etiquetaCandidates = await searchEtiquetas(db, texto, 10);
+      // keep the original suggestions list; only use etiquetaCandidates to detect exact matches
+      const exact = etiquetaCandidates.filter(e => e.nombre.toLowerCase() === texto.trim().toLowerCase());
+      if (exact.length > 0) {
+        const encontrados = await searchObjetosConPortadaWithEtiquetas(db, texto, exact.map(e => e.id));
+        setResultados(encontrados);
+      } else {
+        const encontrados = await searchObjetosConPortada(db, texto);
+        setResultados(encontrados);
+      }
     } catch {
       setResultados([]);
+    } finally {
+      setBuscando(false);
+    }
+  }
+
+  async function buscarPorEtiqueta(id: number) {
+    setBuscando(true);
+    try {
+      const encontrados = await searchObjetosConPortadaWithEtiquetas(db, '', [id]);
+      setResultados(encontrados);
+      setQuery('');
+      setSelectedEtiquetaId(id);
+      setEtiquetasSugeridas([]);
+    } catch {
+      setResultados([]);
+    } finally {
+      setBuscando(false);
+    }
+  }
+
+  async function clearSearch() {
+    setBuscando(true);
+    try {
+      setResultados([]);
+      setQuery('');
+      setSelectedEtiquetaId(null);
+      const all = await listAllEtiquetas(db);
+      setEtiquetasSugeridas(all.slice(0, 16));
+    } catch {
+      // ignore
     } finally {
       setBuscando(false);
     }
@@ -60,7 +131,48 @@ export default function Busqueda() {
           </Pressable>
         ) : null}
       </View>
+      
+      {/** Show legend + chips; if a tag is selected show Clear button */}
+      {(
+        etiquetasSugeridas.length > 0 || selectedEtiquetaId !== null
+      ) && (
+        <View style={{ paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm, paddingTop: Spacing.sm }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={[{ marginBottom: Spacing.sm, textTransform: 'uppercase', fontSize: Typography.xs, fontWeight: Typography.semibold, color: colors.textMuted }]}>Etiquetas</Text>
+            {selectedEtiquetaId !== null && (
+              <Pressable
+                onPress={clearSearch}
+                accessibilityRole="button"
+                accessibilityLabel="Limpiar búsqueda por etiqueta"
+                style={({ pressed }) => ([{ paddingVertical: Spacing.xs, paddingHorizontal: Spacing.md, borderRadius: Radii.md, borderWidth: 1, backgroundColor: pressed ? colors.bgMuted : colors.bgSurface, borderColor: colors.border }])}
+              >
+                <Text style={{ color: colors.textSecondary }}>Limpiar</Text>
+              </Pressable>
+            )}
+          </View>
 
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+            {etiquetasSugeridas.map((et) => (
+              <Pressable
+                key={et.id}
+                onPress={() => buscarPorEtiqueta(et.id)}
+                style={({ pressed }) => ({
+                  paddingVertical: Spacing.sm,
+                  paddingHorizontal: Spacing.md,
+                  borderRadius: Radii.full,
+                  borderWidth: 1,
+                  backgroundColor: pressed ? colors.bgMuted : colors.bgSurface,
+                  borderColor: colors.border,
+                  marginRight: Spacing.sm,
+                  marginBottom: Spacing.sm,
+                })}
+              >
+                <Text style={{ color: colors.textPrimary }}>{et.nombre}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
       <FlatList
         data={resultados}
         keyExtractor={(item) => String(item.id)}

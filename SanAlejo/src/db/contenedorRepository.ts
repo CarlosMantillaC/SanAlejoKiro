@@ -1,5 +1,6 @@
 import { SQLiteDatabase } from 'expo-sqlite';
 import { deleteImageFromStorage } from '../utils/imageStorage';
+import { deleteUnusedEtiquetas } from './etiquetaRepository';
 
 export interface Contenedor {
   id: number;
@@ -66,7 +67,8 @@ export async function getContenedoresFiltrados(
   db: SQLiteDatabase,
   filtroUbicacion: string | null,
   criterioOrden: CriterioOrden,
-  direccionOrden: DireccionOrden
+  direccionOrden: DireccionOrden,
+  etiquetaIds?: number[]
 ): Promise<Contenedor[]> {
   // Whitelist mapping for ORDER BY column expression
   const criterioMap: Record<CriterioOrden, string> = {
@@ -90,16 +92,30 @@ export async function getContenedoresFiltrados(
     throw new Error(`Parámetros de orden inválidos: ${criterioOrden}, ${direccionOrden}`);
   }
 
-  if (filtroUbicacion !== null) {
-    return db.getAllAsync<Contenedor>(
-      `SELECT c.* FROM contenedor c WHERE LOWER(c.ubicacion) = LOWER(?) ORDER BY ${columnaOrden} ${direccionSQL}`,
-      filtroUbicacion
-    );
-  } else {
-    return db.getAllAsync<Contenedor>(
-      `SELECT c.* FROM contenedor c ORDER BY ${columnaOrden} ${direccionSQL}`
-    );
+  // Build base SQL
+  let sql = 'SELECT c.* FROM contenedor c';
+  const params: any[] = [];
+
+  // If etiqueta filter is present, ensure container has at least one object with those etiquetas
+  if (etiquetaIds && etiquetaIds.length > 0) {
+    const placeholders = etiquetaIds.map(() => '?').join(', ');
+    sql += ` WHERE EXISTS (SELECT 1 FROM objeto o JOIN objeto_etiqueta oe ON oe.id_objeto = o.id WHERE o.id_contenedor = c.id AND oe.id_etiqueta IN (${placeholders}))`;
+    params.push(...etiquetaIds);
   }
+
+  if (filtroUbicacion !== null) {
+    if (params.length === 0) {
+      sql += ' WHERE LOWER(c.ubicacion) = LOWER(?)';
+      params.push(filtroUbicacion);
+    } else {
+      sql += ' AND LOWER(c.ubicacion) = LOWER(?)';
+      params.push(filtroUbicacion);
+    }
+  }
+
+  sql += ` ORDER BY ${columnaOrden} ${direccionSQL}`;
+
+  return db.getAllAsync<Contenedor>(sql, ...params);
 }
 
 /**
@@ -137,6 +153,9 @@ export async function deleteContenedorConFotos(
   // 3. Delete the container record (CASCADE deletes objects and objeto_foto rows)
   await deleteContenedor(db, id);
 
-  // 4. Return the URIs that were processed and whether any file deletions failed
+  // 4. Cleanup any etiquetas that no longer have objetos
+  await deleteUnusedEtiquetas(db);
+
+  // 5. Return the URIs that were processed and whether any file deletions failed
   return { uris, hadFileErrors };
 }

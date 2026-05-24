@@ -15,6 +15,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
 import { getObjetoById, updateObjeto } from '../../../../src/db/objetoRepository';
 import { getFotosByObjeto, syncFotos } from '../../../../src/db/fotoRepository';
+import { getEtiquetasForObjeto, setEtiquetasForObjeto } from '../../../../src/db/objetoEtiquetaRepository';
+import { Etiqueta } from '../../../../src/db/etiquetaRepository';
+import TagPicker from '../../../../src/components/TagPicker';
 import { deleteImagesFromStorage } from '../../../../src/utils/imageStorage';
 import { validateFields } from '../../../../src/utils/validator';
 import { GaleriaEditor, FotoLocal } from '../../../../src/components/GaleriaEditor';
@@ -32,6 +35,7 @@ export default function EditarObjeto() {
   const [descripcion, setDescripcion] = useState('');
   const [fotos, setFotos] = useState<FotoLocal[]>([]);
   const [initialFotos, setInitialFotos] = useState<FotoLocal[]>([]);
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [dbError, setDbError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -74,6 +78,8 @@ export default function EditarObjeto() {
         const fotosLocales: FotoLocal[] = fotosDb.map(f => ({ id: f.id, uri: f.uri, isNew: false }));
         setFotos(fotosLocales);
         setInitialFotos(fotosLocales);
+        const et = await getEtiquetasForObjeto(db, Number(id));
+        setEtiquetas(et);
       } catch {
         setDbError('No se pudo cargar el objeto.');
       } finally {
@@ -105,6 +111,10 @@ export default function EditarObjeto() {
 
       await updateObjeto(db, Number(id), { nombre, descripcion, foto_uri: null });
       await syncFotos(db, Number(id), deletedIds, newUris, orderedIds);
+
+      // Sincronizar etiquetas
+      const etiquetaIds = etiquetas.map(e => e.id);
+      await setEtiquetasForObjeto(db, Number(id), etiquetaIds);
 
       // Clean up removed files
       if (removedUris.length > 0) {
@@ -194,6 +204,13 @@ export default function EditarObjeto() {
               onPermissionDenied={() => setDbError('Debes conceder permiso de acceso a la galería o cámara en la configuración del dispositivo.')}
               onError={(msg) => setDbError(msg)}
             />
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: colors.borderSubtle }]} />
+
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: colors.textMuted }]}>Etiquetas (opcional)</Text>
+            <TagPicker selected={etiquetas} onChange={setEtiquetas} placeholder="Agregar etiqueta" />
           </View>
         </View>
 

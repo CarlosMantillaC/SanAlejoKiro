@@ -21,7 +21,7 @@ import { useSortFilter } from '../src/hooks/useSortFilter';
 export default function ListaContenedores() {
   const db = useSQLiteContext();
   const { colors } = useTheme();
-  const { state, setCriterio, setFiltroUbicacion, reset, isNonDefault } = useSortFilter();
+  const { state, setCriterio, setFiltroUbicacion, setFiltroEtiquetas, reset, isNonDefault } = useSortFilter();
 
   const [contenedores, setContenedores] = useState<Contenedor[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +36,8 @@ export default function ListaContenedores() {
         db,
         state.filtroUbicacion,
         state.criterioOrden,
-        state.direccionOrden
+        state.direccionOrden,
+        state.filtroEtiquetas
       );
       setContenedores(data);
       setError(null);
@@ -194,6 +195,8 @@ export default function ListaContenedores() {
         ubicaciones={ubicaciones}
         onCriterioChange={setCriterio}
         onUbicacionChange={setFiltroUbicacion}
+        selectedEtiquetaIds={state.filtroEtiquetas}
+        onEtiquetasChange={setFiltroEtiquetas}
         onReset={reset}
         isNonDefault={isNonDefault}
       />

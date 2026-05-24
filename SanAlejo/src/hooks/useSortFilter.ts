@@ -6,12 +6,14 @@ export interface SortFilterState {
   criterioOrden: CriterioOrden;
   direccionOrden: DireccionOrden;
   filtroUbicacion: string | null;
+  filtroEtiquetas?: number[];
 }
 
 export const DEFAULT_SORT_FILTER: SortFilterState = {
   criterioOrden: 'nombre',
   direccionOrden: 'asc',
   filtroUbicacion: null,
+  filtroEtiquetas: [],
 };
 
 export interface UseSortFilterReturn {
@@ -19,6 +21,7 @@ export interface UseSortFilterReturn {
   /** Selecciona un criterio; invierte la dirección si ya estaba activo. */
   setCriterio: (criterio: CriterioOrden) => void;
   setFiltroUbicacion: (ubicacion: string | null) => void;
+  setFiltroEtiquetas: (etiquetaIds: number[] | undefined) => void;
   reset: () => void;
   /** true si el estado difiere de DEFAULT_SORT_FILTER */
   isNonDefault: boolean;
@@ -36,7 +39,8 @@ function isValidState(value: unknown): value is SortFilterState {
   return (
     VALID_CRITERIOS.includes(obj.criterioOrden as CriterioOrden) &&
     VALID_DIRECCIONES.includes(obj.direccionOrden as DireccionOrden) &&
-    (obj.filtroUbicacion === null || typeof obj.filtroUbicacion === 'string')
+    (obj.filtroUbicacion === null || typeof obj.filtroUbicacion === 'string') &&
+    (obj.filtroEtiquetas === undefined || (Array.isArray(obj.filtroEtiquetas) && obj.filtroEtiquetas.every((n: any) => typeof n === 'number')))
   );
 }
 
@@ -44,7 +48,8 @@ function computeIsNonDefault(state: SortFilterState): boolean {
   return (
     state.criterioOrden !== DEFAULT_SORT_FILTER.criterioOrden ||
     state.direccionOrden !== DEFAULT_SORT_FILTER.direccionOrden ||
-    state.filtroUbicacion !== DEFAULT_SORT_FILTER.filtroUbicacion
+    state.filtroUbicacion !== DEFAULT_SORT_FILTER.filtroUbicacion ||
+    (state.filtroEtiquetas ?? []).length !== (DEFAULT_SORT_FILTER.filtroEtiquetas ?? []).length
   );
 }
 
@@ -117,6 +122,14 @@ export function useSortFilter(): UseSortFilterReturn {
     });
   }, [persist]);
 
+  const setFiltroEtiquetas = useCallback((etiquetaIds: number[] | undefined) => {
+    setState((prev) => {
+      const newState: SortFilterState = { ...prev, filtroEtiquetas: etiquetaIds ?? [] };
+      persist(newState);
+      return newState;
+    });
+  }, [persist]);
+
   const reset = useCallback(() => {
     setState(DEFAULT_SORT_FILTER);
     persist(DEFAULT_SORT_FILTER);
@@ -126,6 +139,7 @@ export function useSortFilter(): UseSortFilterReturn {
     state,
     setCriterio,
     setFiltroUbicacion,
+    setFiltroEtiquetas,
     reset,
     isNonDefault: computeIsNonDefault(state),
     isLoading,
