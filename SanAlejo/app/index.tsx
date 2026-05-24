@@ -3,25 +3,41 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
-import { Contenedor, getAllContenedores, deleteContenedorConFotos } from '../src/db/contenedorRepository';
+import {
+  Contenedor,
+  deleteContenedorConFotos,
+  getContenedoresFiltrados,
+  getUbicacionesUnicas,
+} from '../src/db/contenedorRepository';
 import * as fotoRepository from '../src/db/fotoRepository';
 import { ContenedorItem } from '../src/components/ContenedorItem';
 import { ConfirmDialog } from '../src/components/ConfirmDialog';
 import { FAB } from '../src/components/FAB';
+import { PanelFiltros } from '../src/components/PanelFiltros';
 import { Spacing, Typography, Radii } from '../src/theme';
 import { useTheme } from '../src/context/ThemeContext';
+import { useSortFilter } from '../src/hooks/useSortFilter';
 
 export default function ListaContenedores() {
   const db = useSQLiteContext();
   const { colors } = useTheme();
+  const { state, setCriterio, setFiltroUbicacion, reset, isNonDefault } = useSortFilter();
+
   const [contenedores, setContenedores] = useState<Contenedor[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [contenedorAEliminar, setContenedorAEliminar] = useState<Contenedor | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [panelVisible, setPanelVisible] = useState(false);
+  const [ubicaciones, setUbicaciones] = useState<string[]>([]);
 
   async function cargarContenedores() {
     try {
-      const data = await getAllContenedores(db);
+      const data = await getContenedoresFiltrados(
+        db,
+        state.filtroUbicacion,
+        state.criterioOrden,
+        state.direccionOrden
+      );
       setContenedores(data);
       setError(null);
     } catch {
@@ -29,8 +45,18 @@ export default function ListaContenedores() {
     }
   }
 
-  useEffect(() => { cargarContenedores(); }, []);
-  useFocusEffect(useCallback(() => { cargarContenedores(); }, [db]));
+  async function abrirPanel() {
+    try {
+      const locs = await getUbicacionesUnicas(db);
+      setUbicaciones(locs);
+    } catch {
+      setUbicaciones([]);
+    }
+    setPanelVisible(true);
+  }
+
+  useEffect(() => { cargarContenedores(); }, [state]);
+  useFocusEffect(useCallback(() => { cargarContenedores(); }, [db, state]));
 
   async function handleConfirmarEliminar() {
     if (contenedorAEliminar === null) return;
@@ -53,14 +79,38 @@ export default function ListaContenedores() {
         options={{
           title: 'San Alejo',
           headerRight: () => (
-            <Pressable
-              onPress={() => router.push('/busqueda')}
-              style={styles.searchBtn}
-              accessibilityRole="button"
-              accessibilityLabel="Buscar objetos"
-            >
-              <Ionicons name="search-outline" size={22} color={colors.textPrimary} />
-            </Pressable>
+            <View style={styles.headerButtons}>
+              {/* Filter button with badge when non-default */}
+              <Pressable
+                onPress={abrirPanel}
+                style={styles.headerBtn}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isNonDefault
+                    ? 'Filtros activos. Abrir panel de ordenamiento y filtros'
+                    : 'Abrir panel de ordenamiento y filtros'
+                }
+              >
+                <Ionicons name="options-outline" size={22} color={colors.textPrimary} />
+                {isNonDefault && (
+                  <View
+                    style={[styles.badge, { backgroundColor: colors.accent }]}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no"
+                  />
+                )}
+              </Pressable>
+
+              {/* Search button */}
+              <Pressable
+                onPress={() => router.push('/busqueda')}
+                style={styles.headerBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Buscar objetos"
+              >
+                <Ionicons name="search-outline" size={22} color={colors.textPrimary} />
+              </Pressable>
+            </View>
           ),
         }}
       />
@@ -89,13 +139,41 @@ export default function ListaContenedores() {
           ) : null
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="archive-outline" size={52} color={colors.textMuted} style={styles.emptyIcon} />
-            <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Sin contenedores</Text>
-            <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
-              Agrega tu primera caja, maleta o cajón.
-            </Text>
-          </View>
+          isNonDefault ? (
+            /* Empty state with active filters */
+            <View style={styles.emptyContainer}>
+              <Ionicons name="filter-outline" size={52} color={colors.textMuted} style={styles.emptyIcon} />
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Sin resultados</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+                No hay contenedores que coincidan con los filtros activos.
+              </Text>
+              <Pressable
+                onPress={reset}
+                style={({ pressed }) => [
+                  styles.clearFiltersBtn,
+                  {
+                    backgroundColor: pressed ? colors.accentMuted : colors.bgSurface,
+                    borderColor: colors.accent,
+                  },
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Limpiar filtros"
+              >
+                <Text style={[styles.clearFiltersBtnText, { color: colors.accent }]}>
+                  Limpiar filtros
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            /* Empty state without filters */
+            <View style={styles.emptyContainer}>
+              <Ionicons name="archive-outline" size={52} color={colors.textMuted} style={styles.emptyIcon} />
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Sin contenedores</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+                Agrega tu primera caja, maleta o cajón.
+              </Text>
+            </View>
+          )
         }
         contentContainerStyle={contenedores.length === 0 ? styles.emptyList : styles.list}
       />
@@ -107,6 +185,17 @@ export default function ListaContenedores() {
         message="¿Eliminar este contenedor y todos sus objetos?"
         onConfirm={handleConfirmarEliminar}
         onCancel={() => setContenedorAEliminar(null)}
+      />
+
+      <PanelFiltros
+        visible={panelVisible}
+        onClose={() => setPanelVisible(false)}
+        state={state}
+        ubicaciones={ubicaciones}
+        onCriterioChange={setCriterio}
+        onUbicacionChange={setFiltroUbicacion}
+        onReset={reset}
+        isNonDefault={isNonDefault}
       />
     </View>
   );
@@ -152,6 +241,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: Typography.base * Typography.relaxed,
   },
+  clearFiltersBtn: {
+    marginTop: Spacing.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: Radii.full,
+    borderWidth: 1,
+  },
+  clearFiltersBtnText: {
+    fontSize: Typography.base,
+    fontWeight: Typography.semibold,
+  },
   errorBanner: {
     borderLeftWidth: 3,
     marginHorizontal: Spacing.lg,
@@ -162,6 +262,24 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: Typography.sm,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  headerBtn: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   searchBtn: {
     paddingHorizontal: Spacing.sm,
