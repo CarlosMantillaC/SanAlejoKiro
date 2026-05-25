@@ -208,3 +208,82 @@ San Alejo es una aplicación móvil desarrollada en Expo (React Native) con alma
 12. WHEN el Tema activo cambia, THE Navegador SHALL actualizar los colores de la cabecera de navegación (`headerStyle`, `headerTintColor`, `headerTitleStyle`) para reflejar el nuevo Tema.
 13. THE App SHALL mantener el color de acento índigo (`#6366F1`) como color primario de interacción en ambos temas, ajustando únicamente su opacidad o luminosidad cuando sea necesario para garantizar contraste suficiente sobre el fondo del Tema activo.
 14. IF el Esquema_Sistema no puede determinarse (valor `null` o `undefined`), THEN THE ThemeProvider SHALL aplicar el Tema `light` como valor por defecto.
+
+---
+
+### Requirement 12: Ordenamiento y filtros en listas
+
+**User Story:** Como usuario, quiero poder ordenar y filtrar la lista de contenedores por diferentes criterios, para que pueda navegar eficientemente cuando tengo muchos contenedores registrados.
+
+#### Acceptance Criteria
+
+1. THE Lista_Contenedores SHALL ofrecer un control de ordenamiento accesible desde la pantalla principal que permita al usuario seleccionar el criterio de orden.
+2. WHEN el usuario selecciona "Ordenar por nombre", THE Lista_Contenedores SHALL mostrar los Contenedores ordenados alfabéticamente por nombre de forma ascendente.
+3. WHEN el usuario selecciona "Ordenar por fecha de creación", THE Lista_Contenedores SHALL mostrar los Contenedores ordenados por fecha de creación de más reciente a más antiguo.
+4. WHEN el usuario selecciona "Ordenar por cantidad de objetos", THE Lista_Contenedores SHALL mostrar los Contenedores ordenados de mayor a menor cantidad de Objetos registrados.
+5. THE Lista_Contenedores SHALL ofrecer un control de filtro por ubicación que permita al usuario ingresar texto para filtrar Contenedores cuya `ubicacion` contenga ese texto (búsqueda insensible a mayúsculas/minúsculas).
+6. WHEN el usuario aplica un filtro de ubicación, THE Lista_Contenedores SHALL mostrar únicamente los Contenedores cuya `ubicacion` contenga el texto ingresado.
+7. WHEN el filtro de ubicación está vacío, THE Lista_Contenedores SHALL mostrar todos los Contenedores sin filtrar.
+8. WHEN el usuario cambia el criterio de ordenamiento o el filtro, THE Lista_Contenedores SHALL actualizar la lista inmediatamente sin requerir navegación.
+9. WHEN la combinación de filtro y ordenamiento no retorna ningún Contenedor, THE Lista_Contenedores SHALL mostrar el mensaje "No hay contenedores que coincidan con los filtros aplicados."
+10. THE Base_de_Datos SHALL agregar la columna `created_at` (INTEGER NOT NULL, timestamp Unix en milisegundos) a la tabla `contenedor` para soportar el ordenamiento por fecha de creación.
+
+---
+
+### Requirement 13: Exportar e importar datos (backup)
+
+**User Story:** Como usuario, quiero poder exportar todos mis datos a un archivo y restaurarlos desde ese archivo, para que no pierda mi inventario si cambio de dispositivo o reinstalo la app.
+
+#### Acceptance Criteria
+
+1. THE App SHALL proveer una opción de exportación accesible desde la pantalla principal o desde un menú de configuración.
+2. WHEN el usuario activa la exportación, THE App SHALL generar un archivo JSON que contenga todos los Contenedores y todos los Objetos registrados en la Base_de_Datos, incluyendo las rutas de fotos (`foto_uri`) de cada Objeto.
+3. WHEN el archivo JSON es generado exitosamente, THE FileSystem SHALL guardar el archivo en el directorio de documentos del dispositivo con el nombre `san-alejo-backup-[fecha].json` y THE App SHALL invocar la API de compartir del sistema operativo para que el usuario pueda enviarlo a otro dispositivo o servicio de almacenamiento.
+4. THE App SHALL proveer una opción de importación accesible desde la misma pantalla que la exportación.
+5. WHEN el usuario activa la importación, THE App SHALL permitir al usuario seleccionar un archivo JSON previamente exportado desde el sistema de archivos del dispositivo.
+6. WHEN el usuario selecciona un archivo de importación válido, THE App SHALL mostrar un diálogo de confirmación con el texto "¿Importar datos? Esto reemplazará todos los contenedores y objetos actuales." y opciones "Cancelar" e "Importar".
+7. WHEN el usuario confirma la importación, THE Base_de_Datos SHALL eliminar todos los registros existentes en las tablas `contenedor` y `objeto`, e insertar los registros del archivo JSON manteniendo las relaciones `id_contenedor`.
+8. WHEN la importación se completa exitosamente, THE App SHALL navegar a la Lista_Contenedores y mostrar los datos importados.
+9. IF el archivo seleccionado no tiene el formato JSON esperado o está corrupto, THEN THE App SHALL mostrar un mensaje de error indicando que el archivo no es válido sin modificar los datos existentes.
+10. IF la Base_de_Datos falla durante la importación, THEN THE App SHALL revertir todos los cambios (transacción atómica) y mostrar un mensaje de error indicando que no se pudo importar.
+11. IF el archivo de exportación contiene referencias a fotos (`foto_uri` no nulos), THEN THE App SHALL incluir en el JSON una nota indicando que las fotos no se exportan y deben transferirse manualmente.
+
+---
+
+### Requirement 14: Múltiples fotos por objeto
+
+**User Story:** Como usuario, quiero poder agregar varias fotos a un objeto, para que pueda documentar objetos complejos desde múltiples ángulos.
+
+#### Acceptance Criteria
+
+1. WHEN la App se inicia, THE Base_de_Datos SHALL crear la tabla `objeto_foto` con columnas `id` (INTEGER PRIMARY KEY AUTOINCREMENT), `id_objeto` (INTEGER NOT NULL, FOREIGN KEY referenciando `objeto.id` ON DELETE CASCADE) y `foto_uri` (TEXT NOT NULL) si no existe.
+2. THE Formulario_Objeto SHALL permitir al usuario agregar múltiples fotos a un Objeto, con un máximo de 10 fotos por Objeto.
+3. WHEN el usuario agrega una foto en el Formulario_Objeto, THE FileSystem SHALL copiar el archivo al directorio `documentDirectory + 'images/'` y THE Formulario_Objeto SHALL mostrar la nueva foto en una galería de miniaturas.
+4. WHEN el usuario toca una miniatura en el Formulario_Objeto, THE App SHALL mostrar la foto en tamaño completo con opción de eliminarla.
+5. WHEN el usuario elimina una foto en el Formulario_Objeto, THE FileSystem SHALL eliminar el archivo correspondiente y THE Formulario_Objeto SHALL actualizar la galería de miniaturas.
+6. WHEN el usuario guarda el Objeto, THE Base_de_Datos SHALL insertar un registro en `objeto_foto` por cada foto asociada al Objeto.
+7. WHEN un Objeto con fotos es mostrado en el Detalle_Contenedor, THE Detalle_Contenedor SHALL mostrar la primera foto del Objeto como miniatura junto al nombre y descripción.
+8. WHEN el usuario toca la miniatura de un Objeto en el Detalle_Contenedor, THE App SHALL mostrar una galería deslizable con todas las fotos del Objeto.
+9. WHEN el usuario confirma la eliminación de un Objeto, THE FileSystem SHALL eliminar todos los archivos de imagen referenciados en `objeto_foto` para ese Objeto antes de que THE Base_de_Datos elimine los registros.
+10. IF el usuario intenta agregar más de 10 fotos a un Objeto, THEN THE App SHALL mostrar un mensaje indicando que se ha alcanzado el límite máximo de fotos.
+11. THE App SHALL migrar la columna `foto_uri` existente en la tabla `objeto` a la nueva tabla `objeto_foto` durante la inicialización, creando un registro en `objeto_foto` por cada Objeto que tenga `foto_uri` no nulo, y luego eliminando la columna `foto_uri` de `objeto` (mediante recreación de tabla en SQLite).
+
+---
+
+### Requirement 15: Etiquetas y categorías para objetos
+
+**User Story:** Como usuario, quiero poder asignar etiquetas a los objetos para clasificarlos por categoría, para que pueda filtrar y encontrar objetos por tipo sin importar en qué contenedor están.
+
+#### Acceptance Criteria
+
+1. WHEN la App se inicia, THE Base_de_Datos SHALL crear la tabla `etiqueta` con columnas `id` (INTEGER PRIMARY KEY AUTOINCREMENT) y `nombre` (TEXT NOT NULL UNIQUE) si no existe.
+2. WHEN la App se inicia, THE Base_de_Datos SHALL crear la tabla `objeto_etiqueta` con columnas `id_objeto` (INTEGER NOT NULL, FOREIGN KEY referenciando `objeto.id` ON DELETE CASCADE) e `id_etiqueta` (INTEGER NOT NULL, FOREIGN KEY referenciando `etiqueta.id` ON DELETE CASCADE), con PRIMARY KEY compuesta `(id_objeto, id_etiqueta)`, si no existe.
+3. THE Formulario_Objeto SHALL presentar un control para agregar etiquetas al Objeto, permitiendo seleccionar etiquetas existentes o crear nuevas ingresando texto.
+4. WHEN el usuario ingresa el nombre de una etiqueta nueva en el Formulario_Objeto, THE Base_de_Datos SHALL insertar la etiqueta en la tabla `etiqueta` si no existe ya (usando `INSERT OR IGNORE`).
+5. WHEN el usuario guarda el Objeto, THE Base_de_Datos SHALL insertar los registros correspondientes en `objeto_etiqueta` para cada etiqueta asociada al Objeto.
+6. WHEN un Objeto con etiquetas es mostrado en el Detalle_Contenedor, THE Detalle_Contenedor SHALL mostrar las etiquetas del Objeto como chips o badges junto al nombre y descripción.
+7. THE App SHALL proveer un filtro por etiqueta accesible desde la pantalla de búsqueda que permita al usuario seleccionar una o más etiquetas para filtrar los resultados.
+8. WHEN el usuario filtra por etiqueta en la búsqueda, THE Base_de_Datos SHALL retornar únicamente los Objetos que tengan todas las etiquetas seleccionadas.
+9. WHEN el usuario elimina una etiqueta de un Objeto en el Formulario_Objeto (modo edición), THE Base_de_Datos SHALL eliminar el registro correspondiente de `objeto_etiqueta`.
+10. THE App SHALL proveer una pantalla de gestión de etiquetas accesible desde la configuración donde el usuario pueda ver todas las etiquetas existentes y eliminar las que no estén en uso.
+11. WHEN el usuario elimina una etiqueta desde la pantalla de gestión, THE Base_de_Datos SHALL eliminar el registro de la tabla `etiqueta` y, mediante ON DELETE CASCADE, eliminar todos los registros de `objeto_etiqueta` que referencien esa etiqueta.

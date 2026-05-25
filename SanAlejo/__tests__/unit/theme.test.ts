@@ -1,4 +1,54 @@
 /**
+ * Property/unit tests for theme contrast (Property 17)
+ */
+
+import { lightColors } from '../../src/theme';
+
+function hexToRgb(hex: string) {
+  const h = hex.replace('#', '');
+  const normalized = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+  const bigint = parseInt(normalized, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return { r, g, b };
+}
+
+function srgbToLinear(c: number) {
+  const v = c / 255;
+  return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+}
+
+function relativeLuminance(hex: string) {
+  const { r, g, b } = hexToRgb(hex);
+  const R = srgbToLinear(r);
+  const G = srgbToLinear(g);
+  const B = srgbToLinear(b);
+  return 0.2126 * R + 0.7152 * G + 0.0722 * B;
+}
+
+function contrastRatio(hex1: string, hex2: string) {
+  const L1 = relativeLuminance(hex1);
+  const L2 = relativeLuminance(hex2);
+  const lighter = Math.max(L1, L2);
+  const darker = Math.min(L1, L2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+describe('Property 17: Contraste WCAG AA en tema light', () => {
+  it('textos principales y secundarios tienen contraste ≥ 4.5:1 frente a fondos principales', () => {
+    const textColors = [lightColors.textPrimary, lightColors.textSecondary, lightColors.textMuted];
+    const bgColors = [lightColors.bgBase, lightColors.bgSurface, lightColors.bgElevated];
+
+    for (const tc of textColors) {
+      for (const bc of bgColors) {
+        const ratio = contrastRatio(tc, bc);
+        expect(ratio).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+});
+/**
  * Unit and property-based tests for the theme system.
  *
  * **Validates: Requirements 11.1, 11.3, 11.4, 11.5, 11.13, 11.14**

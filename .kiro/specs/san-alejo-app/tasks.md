@@ -152,7 +152,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
 - [x] 4.5. Checkpoint — Verificar imageStorage y property tests 14, 15, 16
   - Asegurarse de que los tests de `imageStorage` pasan y que los property tests 14, 15 y 16 pasan correctamente. Consultar al usuario si surgen dudas.
 
-- [ ] 5. Implementar componentes reutilizables de UI
+- [x] 5. Implementar componentes reutilizables de UI
   - [x] 5.1 Crear `src/components/FAB.tsx`
     - Componente `FAB` con prop `onPress: () => void` y texto "+"
     - Posicionado como botón flotante (position absolute, bottom/right)
@@ -184,7 +184,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Mostrar dos botones: "Tomar foto" (cámara) y "Seleccionar de galería" / "Cambiar foto" (galería)
     - _Requirements: 10.2, 10.3, 10.11_
 
-  - [ ]* 5.6 Escribir unit tests para `ConfirmDialog`
+  - [x]* 5.6 Escribir unit tests para `ConfirmDialog`
     - Escribir en `__tests__/components/ConfirmDialog.test.tsx`
     - Caso: `visible=false` → no renderiza el diálogo
     - Caso: `visible=true` → muestra el mensaje y los botones
@@ -210,13 +210,13 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Recargar la lista al volver a la pantalla usando `useFocusEffect`
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7_
 
-  - [ ]* 6.3 Escribir property test — Property 2: Completitud de datos en lista de contenedores
+  - [x]* 6.3 Escribir property test — Property 2: Completitud de datos en lista de contenedores
     - Escribir en `__tests__/screens/ListaContenedores.test.tsx`
     - **Property 2: Completitud de datos en lista de contenedores**
     - **Validates: Requirements 2.2**
     - Para cualquier contenedor con nombre, descripción y ubicación arbitrarios, verificar que el componente `ContenedorItem` renderiza los tres campos visibles en pantalla
 
-  - [ ]* 6.4 Escribir unit tests para Lista de Contenedores
+  - [x]* 6.4 Escribir unit tests para Lista de Contenedores
     - Escribir en `__tests__/screens/ListaContenedores.test.tsx`
     - Caso: lista vacía → muestra mensaje de estado vacío
     - Caso: lista con contenedores → renderiza un ítem por contenedor
@@ -240,7 +240,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Manejar errores de validación y de BD igual que en modo creación
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.6, 3.7, 3.8, 9.2, 9.5_
 
-  - [ ]* 7.3 Escribir unit tests para Formulario de Contenedor
+  - [x]* 7.3 Escribir unit tests para Formulario de Contenedor
     - Escribir en `__tests__/screens/FormularioContenedor.test.tsx`
     - Caso: campos vacíos al guardar → muestra errores de validación
     - Caso: campos con solo espacios → muestra errores de validación
@@ -249,7 +249,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Caso (modo edición): campos precargados con valores actuales del contenedor
     - _Requirements: 3.3, 3.4, 3.5, 3.6, 3.8, 9.5_
 
-- [ ] 8. Implementar pantalla Detalle del Contenedor
+- [x] 8. Implementar pantalla Detalle del Contenedor
   - [x] 8.1 Crear `app/contenedor/[id].tsx` — Detalle del Contenedor
     - Leer `id` de los parámetros de ruta con `useLocalSearchParams`
     - Cargar datos del contenedor con `getContenedorById` y objetos con `getObjetosByContenedor`
@@ -269,7 +269,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Manejar errores de BD mostrando "No se pudo eliminar el objeto."
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 10.9_
 
-  - [ ]* 8.3 Escribir unit tests para Detalle del Contenedor
+  - [x]* 8.3 Escribir unit tests para Detalle del Contenedor
     - Escribir en `__tests__/screens/DetalleContenedor.test.tsx`
     - Caso: contenedor sin objetos → muestra mensaje de estado vacío
     - Caso: contenedor con objetos → renderiza un ítem por objeto
@@ -279,7 +279,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Caso: cancelar eliminación → no modifica datos
     - _Requirements: 4.4, 4.6, 6.2, 6.5, 9.1_
 
-  - [ ]* 8.4 Escribir property test — Property 6: Completitud de datos en detalle de contenedor
+  - [x]* 8.4 Escribir property test — Property 6: Completitud de datos en detalle de contenedor
     - Escribir en `__tests__/screens/DetalleContenedor.test.tsx`
     - **Property 6: Completitud de datos en detalle de contenedor**
     - **Validates: Requirements 4.1, 4.3**
@@ -308,7 +308,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Manejar errores de validación y de BD igual que en modo creación
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.6, 5.7, 5.8, 9.4, 9.5, 10.8, 10.9, 10.11_
 
-  - [ ]* 9.3 Escribir unit tests para Formulario de Objeto
+  - [x]* 9.3 Escribir unit tests para Formulario de Objeto
     - Escribir en `__tests__/screens/FormularioObjeto.test.tsx`
     - Caso: campos vacíos al guardar → muestra errores de validación
     - Caso: campos con solo espacios → muestra errores de validación
@@ -317,7 +317,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Caso (modo edición): campos precargados con valores actuales del objeto
     - _Requirements: 5.3, 5.4, 5.5, 5.6, 5.8, 9.5_
 
-  - [ ]* 9.4 Escribir property test — Property 13: Precarga de datos en modo edición
+  - [x]* 9.4 Escribir property test — Property 13: Precarga de datos en modo edición
     - Escribir en `__tests__/screens/FormularioContenedor.test.tsx` y `__tests__/screens/FormularioObjeto.test.tsx`
     - **Property 13: Precarga de datos en modo edición**
     - **Validates: Requirements 9.5**
@@ -335,7 +335,7 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Manejar errores de BD mostrando "No se pudo eliminar el contenedor."
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 10.10_
 
-  - [ ]* 11.2 Escribir unit tests para eliminación de contenedores
+  - [x]* 11.2 Escribir unit tests para eliminación de contenedores
     - Escribir en `__tests__/screens/ListaContenedores.test.tsx`
     - Caso: confirmar eliminación → llama `deleteContenedor` y actualiza lista
     - Caso: cancelar eliminación → no modifica datos ni llama al repositorio
@@ -357,19 +357,19 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Al tocar, navegar a `/busqueda`
     - _Requirements: 8.1_
 
-  - [ ]* 12.3 Escribir property test — Property 11: Búsqueda case-insensitive
+  - [x]* 12.3 Escribir property test — Property 11: Búsqueda case-insensitive
     - Escribir en `__tests__/unit/objetoRepository.test.ts`
     - **Property 11: Búsqueda case-insensitive retorna todos los coincidentes**
     - **Validates: Requirements 8.2**
     - Para cualquier texto de búsqueda no vacío y conjunto de objetos, verificar que `searchObjetos` retorna exactamente los objetos cuyo nombre o descripción contienen el texto (ignorando mayúsculas/minúsculas), sin omitir ni incluir de más
 
-  - [ ]* 12.4 Escribir property test — Property 12: Resultados incluyen nombre del contenedor
+  - [x]* 12.4 Escribir property test — Property 12: Resultados incluyen nombre del contenedor
     - Escribir en `__tests__/unit/objetoRepository.test.ts`
     - **Property 12: Resultados de búsqueda incluyen nombre del contenedor**
     - **Validates: Requirements 8.3**
     - Para cualquier resultado de `searchObjetos`, verificar que cada objeto retornado incluye el campo `nombre_contenedor` con el nombre correcto del contenedor al que pertenece
 
-  - [ ]* 12.5 Escribir unit tests para pantalla de Búsqueda
+  - [x]* 12.5 Escribir unit tests para pantalla de Búsqueda
     - Escribir en `__tests__/screens/Busqueda.test.tsx`
     - Caso: campo vacío → no muestra resultados
     - Caso: búsqueda sin resultados → muestra mensaje de estado vacío
@@ -392,14 +392,14 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
     - Mantener `export const Colors = darkColors` como alias de compatibilidad para código existente
     - _Requirements: 11.1, 11.4, 11.5, 11.13, 11.14_
 
-  - [ ]* 14.2 Escribir property test — Property 17: Contraste WCAG AA en el tema light
+  - [x]* 14.2 Escribir property test — Property 17: Contraste WCAG AA en el tema light
     - Escribir en `__tests__/unit/theme.test.ts`
     - **Property 17: Contraste WCAG AA en el tema light**
     - **Validates: Requirements 11.5**
     - Implementar función auxiliar `contrastRatio(hex1, hex2)` usando la fórmula de luminancia relativa WCAG 2.1
     - Para cada par (textPrimary, textSecondary, textMuted) × (bgBase, bgSurface, bgElevated) de `lightColors`, verificar que el ratio de contraste es ≥ 4.5:1
 
-  - [ ]* 14.3 Escribir property test — Property 18: Invariancia del color de acento
+  - [x]* 14.3 Escribir property test — Property 18: Invariancia del color de acento
     - Escribir en `__tests__/unit/theme.test.ts`
     - **Property 18: Invariancia del color de acento en ambos temas**
     - **Validates: Requirements 11.13**
@@ -447,6 +447,137 @@ Implementación incremental de la app móvil San Alejo en Expo (React Native) co
 
 - [x] 15. Checkpoint — Verificar sistema de temas
   - Asegurarse de que todos los tests del sistema de temas pasan (theme.test.ts, ThemeProvider.test.tsx, property tests 17 y 18). Consultar al usuario si surgen dudas.
+
+- [ ] 16. Implementar ordenamiento y filtros en listas
+  - [x] 16.1 Agregar columna `created_at` a la tabla `contenedor` en `src/db/schema.ts`
+    - Agregar migración `user_version 2 → 3`: `ALTER TABLE contenedor ADD COLUMN created_at INTEGER`
+    - Actualizar `insertContenedor` para incluir `created_at: Date.now()` en el INSERT
+    - Actualizar interfaz `Contenedor` para incluir `created_at: number`
+    - _Requirements: 12.10_
+
+  - [x] 16.2 Agregar funciones de ordenamiento en `src/db/contenedorRepository.ts`
+    - Agregar tipo `OrdenContenedor = 'nombre' | 'fecha' | 'cantidad_objetos'`
+    - Actualizar `getAllContenedores` para aceptar parámetro `orden: OrdenContenedor` y `filtroUbicacion?: string`
+    - Implementar query con `ORDER BY nombre ASC`, `ORDER BY created_at DESC` y `ORDER BY (SELECT COUNT(*) FROM objeto WHERE id_contenedor = contenedor.id) DESC` según el criterio
+    - Implementar filtro `WHERE ubicacion LIKE ? COLLATE NOCASE` cuando `filtroUbicacion` no está vacío
+    - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7_
+
+  - [x] 16.3 Actualizar `app/index.tsx` con controles de ordenamiento y filtro
+    - Agregar estado `orden: OrdenContenedor` (default: `'nombre'`) y `filtroUbicacion: string` (default: `''`)
+    - Agregar selector de ordenamiento (botones o picker) con opciones "Nombre", "Fecha" y "Cantidad"
+    - Agregar `TextInput` para filtro por ubicación
+    - Actualizar llamada a `getAllContenedores` para pasar `orden` y `filtroUbicacion`
+    - Mostrar mensaje "No hay contenedores que coincidan con los filtros aplicados." cuando la lista filtrada está vacía pero hay contenedores en la BD
+    - _Requirements: 12.1, 12.8, 12.9_
+
+ - [x] 17. Implementar exportar e importar datos (backup)
+  - [x] 17.1 Crear `src/utils/backupManager.ts`
+    - Implementar `exportarDatos(db): Promise<string>` — consulta todos los contenedores y objetos, genera JSON con estructura `{ version: 1, exportedAt: string, contenedores: Contenedor[], objetos: Objeto[] }`, guarda en `documentDirectory + 'san-alejo-backup-[fecha].json'` y retorna la ruta del archivo
+    - Implementar `importarDatos(db, filePath): Promise<void>` — lee el archivo JSON, valida la estructura, ejecuta en una transacción: DELETE de todos los objetos y contenedores, INSERT de los contenedores del backup, INSERT de los objetos del backup
+    - Implementar `validarBackup(json: unknown): boolean` — verifica que el JSON tiene la estructura esperada
+    - _Requirements: 13.2, 13.3, 13.7, 13.9, 13.10_
+
+  - [x] 17.2 Crear `app/configuracion.tsx` — Pantalla de configuración con backup
+    - Botón "Exportar datos" que llama `exportarDatos` y luego `Sharing.shareAsync(filePath)` de `expo-sharing`
+    - Botón "Importar datos" que abre el selector de archivos con `DocumentPicker.getDocumentAsync` de `expo-document-picker`
+    - Al seleccionar archivo, mostrar `ConfirmDialog` con mensaje de confirmación de importación
+    - Al confirmar, llamar `importarDatos` y navegar a `/` al completar
+    - Manejar errores mostrando mensajes descriptivos
+    - _Requirements: 13.1, 13.4, 13.5, 13.6, 13.8, 13.9, 13.10, 13.11_
+
+  - [x] 17.3 Agregar acceso a configuración desde `app/index.tsx`
+    - Agregar botón de configuración (ícono ⚙️) en el `headerRight` junto al botón de búsqueda
+    - Al tocar, navegar a `/configuracion`
+    - _Requirements: 13.1_
+
+  - [x] 17.4 Instalar dependencias de backup
+    - Agregar `expo-sharing` y `expo-document-picker` al `package.json`
+    - _Requirements: 13.3, 13.5_
+
+ - [x] 18. Implementar múltiples fotos por objeto
+  - [x] 18.1 Crear tabla `objeto_foto` y migrar datos en `src/db/schema.ts`
+    - Agregar migración `user_version 3 → 4`:
+      1. Crear tabla `objeto_foto (id INTEGER PRIMARY KEY AUTOINCREMENT, id_objeto INTEGER NOT NULL REFERENCES objeto(id) ON DELETE CASCADE, foto_uri TEXT NOT NULL)`
+      2. Migrar datos: `INSERT INTO objeto_foto (id_objeto, foto_uri) SELECT id, foto_uri FROM objeto WHERE foto_uri IS NOT NULL`
+      3. Recrear tabla `objeto` sin columna `foto_uri` (CREATE TABLE objeto_new, INSERT INTO objeto_new SELECT id, nombre, descripcion, id_contenedor FROM objeto, DROP TABLE objeto, ALTER TABLE objeto_new RENAME TO objeto)
+    - _Requirements: 14.1, 14.11_
+
+  - [x] 18.2 Crear `src/db/objetoFotoRepository.ts`
+    - Interfaz `ObjetoFoto { id: number; id_objeto: number; foto_uri: string }`
+    - `getFotosByObjeto(db, id_objeto): Promise<ObjetoFoto[]>`
+    - `insertFoto(db, id_objeto, foto_uri): Promise<number>`
+    - `deleteFoto(db, id: number): Promise<void>`
+    - `deleteFotosByObjeto(db, id_objeto): Promise<string[]>` — retorna las URIs eliminadas para limpiar archivos
+    - _Requirements: 14.6, 14.7, 14.9_
+
+  - [x] 18.3 Crear `src/components/FotoGaleria.tsx`
+    - Componente que muestra una galería de miniaturas de fotos
+    - Props: `fotos: string[]`, `onAgregarFoto: () => void`, `onEliminarFoto: (uri: string) => void`, `maxFotos?: number` (default 10)
+    - Mostrar miniaturas en grid horizontal con botón "+" para agregar
+    - Al tocar una miniatura, mostrar modal con foto en tamaño completo y botón de eliminar
+    - Deshabilitar botón "+" cuando se alcanza `maxFotos`
+    - _Requirements: 14.2, 14.3, 14.4, 14.5, 14.10_
+
+  - [x] 18.4 Actualizar formularios de objeto para usar `FotoGaleria`
+    - Reemplazar `ImagePickerButton` por `FotoGaleria` en `app/contenedor/objeto/nuevo.tsx`
+    - Reemplazar `ImagePickerButton` por `FotoGaleria` en `app/contenedor/objeto/editar/[id].tsx`
+    - En modo edición, cargar fotos existentes con `getFotosByObjeto` al iniciar
+    - Al guardar, sincronizar fotos: insertar nuevas con `insertFoto`, eliminar las removidas con `deleteFoto` + `deleteImageFromStorage`
+    - _Requirements: 14.2, 14.3, 14.5, 14.6_
+
+  - [x] 18.5 Actualizar `ObjetoItem` y `Detalle_Contenedor` para mostrar primera foto
+    - Actualizar `ObjetoItem` para aceptar `fotos: string[]` y mostrar la primera como miniatura
+    - Actualizar `app/contenedor/[id].tsx` para cargar fotos de cada objeto con `getFotosByObjeto`
+    - _Requirements: 14.7, 14.8_
+
+ - [x] 19. Implementar etiquetas y categorías para objetos
+  - [x] 19.1 Crear tablas `etiqueta` y `objeto_etiqueta` en `src/db/schema.ts`
+    - Agregar migración `user_version 4 → 5`:
+      1. `CREATE TABLE IF NOT EXISTS etiqueta (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL UNIQUE)`
+      2. `CREATE TABLE IF NOT EXISTS objeto_etiqueta (id_objeto INTEGER NOT NULL REFERENCES objeto(id) ON DELETE CASCADE, id_etiqueta INTEGER NOT NULL REFERENCES etiqueta(id) ON DELETE CASCADE, PRIMARY KEY (id_objeto, id_etiqueta))`
+    - _Requirements: 15.1, 15.2_
+
+  - [x] 19.2 Crear `src/db/etiquetaRepository.ts`
+    - Interfaz `Etiqueta { id: number; nombre: string }`
+    - `getAllEtiquetas(db): Promise<Etiqueta[]>`
+    - `insertEtiquetaIfNotExists(db, nombre): Promise<number>` — usa `INSERT OR IGNORE` y retorna el id
+    - `getEtiquetasByObjeto(db, id_objeto): Promise<Etiqueta[]>`
+    - `setEtiquetasObjeto(db, id_objeto, etiquetaIds: number[]): Promise<void>` — elimina las existentes e inserta las nuevas
+    - `deleteEtiqueta(db, id): Promise<void>`
+    - `getEtiquetasEnUso(db): Promise<Etiqueta[]>` — solo etiquetas con al menos un objeto asociado
+    - _Requirements: 15.4, 15.5, 15.9, 15.11_
+
+  - [x] 19.3 Crear `src/components/EtiquetaSelector.tsx`
+    - Componente para seleccionar/crear etiquetas en el formulario de objeto
+    - Props: `etiquetasSeleccionadas: Etiqueta[]`, `onCambio: (etiquetas: Etiqueta[]) => void`
+    - Mostrar etiquetas seleccionadas como chips con botón "×" para eliminar
+    - Input de texto para buscar etiquetas existentes o crear nuevas
+    - Mostrar sugerencias de etiquetas existentes al escribir
+    - _Requirements: 15.3, 15.4_
+
+  - [ ] 19.4 Actualizar formularios de objeto para usar `EtiquetaSelector`
+    - Integrar `EtiquetaSelector` en `app/contenedor/objeto/nuevo.tsx`
+    - Integrar `EtiquetaSelector` en `app/contenedor/objeto/editar/[id].tsx` (precargar etiquetas existentes)
+    - Al guardar, llamar `setEtiquetasObjeto` con los ids de las etiquetas seleccionadas
+    - _Requirements: 15.3, 15.5, 15.9_
+
+  - [ ] 19.5 Actualizar `ObjetoItem` para mostrar etiquetas
+    - Actualizar `ObjetoItem` para aceptar `etiquetas: Etiqueta[]` y mostrarlas como chips/badges
+    - Actualizar `app/contenedor/[id].tsx` para cargar etiquetas de cada objeto
+    - _Requirements: 15.6_
+
+  - [ ] 19.6 Agregar filtro por etiqueta en `app/busqueda.tsx`
+    - Agregar selector de etiquetas para filtrar resultados
+    - Actualizar `searchObjetos` en `objetoRepository` para aceptar `etiquetaIds?: number[]` y filtrar con JOIN a `objeto_etiqueta`
+    - _Requirements: 15.7, 15.8_
+
+  - [ ] 19.7 Crear `app/configuracion/etiquetas.tsx` — Gestión de etiquetas
+    - Listar todas las etiquetas con indicador de cuántos objetos las usan
+    - Botón de eliminar por etiqueta con confirmación
+    - _Requirements: 15.10, 15.11_
+
+- [ ] 20. Checkpoint final — Verificar nuevas features
+  - Asegurarse de que todos los tests pasan incluyendo las nuevas features. Consultar al usuario si surgen dudas.
 
 ## Notas
 

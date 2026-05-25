@@ -12,10 +12,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
 import { Contenedor, getContenedorById } from '../../src/db/contenedorRepository';
 import { Objeto, getObjetosByContenedor, deleteObjeto } from '../../src/db/objetoRepository';
+import { getFotosByObjeto } from '../../src/db/objetoFotoRepository';
+import { getEtiquetasByObjeto, Etiqueta } from '../../src/db/etiquetaRepository';
 import { ObjetoItem } from '../../src/components/ObjetoItem';
 import { ImageViewer } from '../../src/components/ImageViewer';
 import { ConfirmDialog } from '../../src/components/ConfirmDialog';
-import { deleteImageFromStorage } from '../../src/utils/imageStorage';
+import { deleteImagesFromStorage } from '../../src/utils/imageStorage';
 import { Radii, Shadows, Spacing, Typography } from '../../src/theme';
 import { useTheme } from '../../src/context/ThemeContext';
 
@@ -38,8 +40,16 @@ export default function DetalleContenedor() {
         getContenedorById(db, Number(id)),
         getObjetosByContenedor(db, Number(id)),
       ]);
+
+      const objetosConEtiquetas = await Promise.all(
+        objs.map(async (obj) => {
+          const etiquetas = await getEtiquetasByObjeto(db, obj.id);
+          return { ...obj, etiquetas };
+        })
+      );
+
       setContenedor(cont);
-      setObjetos(objs);
+      setObjetos(objetosConEtiquetas);
       setError(null);
     } catch {
       setError('No se pudo cargar el contenedor. Intenta de nuevo.');
@@ -48,50 +58,41 @@ export default function DetalleContenedor() {
     }
   }
 
-  useEffect(() => { cargarDatos(); }, [id]);
-  useFocusEffect(useCallback(() => { cargarDatos(); }, [db, id]));
+  useEffect(() => {
+    cargarDatos();
+  }, [db, id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      cargarDatos();
+    }, [db, id])
+  );
 
   async function handleConfirmarEliminar() {
     if (objetoAEliminar === null) return;
-    if (objetoAEliminar.foto_uri !== null) {
-      try { await deleteImageFromStorage(objetoAEliminar.foto_uri); } catch { /* silencioso */ }
-    }
     try {
+      const fotos = await getFotosByObjeto(db, objetoAEliminar.id);
+      const uris = fotos.map((f) => f.foto_uri);
+
+      if (uris.length > 0) {
+        try {
+          await deleteImagesFromStorage(uris);
+        } catch {
+          /* silencioso */
+        }
+      }
+
       await deleteObjeto(db, objetoAEliminar.id);
       setObjetoAEliminar(null);
+      setDeleteError(null);
       cargarDatos();
     } catch {
-      setDeleteError('No se pudo eliminar el objeto.');
-      setObjetoAEliminar(null);
+      setDeleteError('No se pudo eliminar el objeto. Intenta de nuevo.');
     }
   }
 
-  const titulo = contenedor?.nombre ?? 'Contenedor';
-
   return (
-    <View style={[styles.container, { backgroundColor: colors.bgBase }]}>
-      <Stack.Screen
-        options={{
-          title: titulo,
-          headerRight: () => (
-            <Pressable
-              onPress={() => router.push(`/contenedor/editar/${id}`)}
-              accessibilityRole="button"
-              accessibilityLabel="Editar contenedor"
-              style={styles.editHeaderBtn}
-            >
-              <Text style={[styles.editHeaderText, { color: colors.accentLight }]}>Editar</Text>
-            </Pressable>
-          ),
-        }}
-      />
-
-      {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.accent} />
-        </View>
-      ) : (
-        <>
+    <View style={styles.container}>
           {(error || deleteError) ? (
             <View style={[styles.errorBanner, { backgroundColor: colors.dangerMuted, borderLeftColor: colors.danger }]}>
               <Text style={[styles.errorText, { color: colors.danger }]}>{error ?? deleteError}</Text>
@@ -136,7 +137,7 @@ export default function DetalleContenedor() {
                 objeto={item}
                 onEdit={() => router.push(`/contenedor/objeto/editar/${item.id}`)}
                 onDelete={() => setObjetoAEliminar(item)}
-                onPressFoto={item.foto_uri !== null ? () => setImagenVisorUri(item.foto_uri) : undefined}
+                onPressFoto={item.foto_uri ? () => setImagenVisorUri(item.foto_uri!) : undefined}
               />
             )}
             ListEmptyComponent={
@@ -168,10 +169,8 @@ export default function DetalleContenedor() {
           >
             <Text style={[styles.addButtonText, { color: colors.textOnAccent }]}>+ Agregar objeto</Text>
           </Pressable>
-        </>
-      )}
-
-      <ConfirmDialog
+ 
+          <ConfirmDialog
         visible={objetoAEliminar !== null}
         message="¿Eliminar este objeto?"
         onConfirm={handleConfirmarEliminar}

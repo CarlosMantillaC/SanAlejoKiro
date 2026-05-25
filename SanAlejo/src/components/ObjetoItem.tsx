@@ -22,7 +22,7 @@ export function ObjetoItem({ objeto, onEdit, onDelete, onPressFoto }: ObjetoItem
         { backgroundColor: colors.bgSurface, borderBottomColor: colors.borderSubtle },
       ]}
     >
-      {objeto.foto_uri !== null ? (
+      {objeto.foto_uri ? (
         onPressFoto ? (
           <Pressable
             onPress={onPressFoto}
@@ -44,7 +44,7 @@ export function ObjetoItem({ objeto, onEdit, onDelete, onPressFoto }: ObjetoItem
           />
         )
       ) : (
-        <View style={[styles.fotoPlaceholder, { backgroundColor: colors.bgMuted }]}>
+        <View style={[styles.fotoPlaceholder, { backgroundColor: colors.bgMuted }]}> 
           <Ionicons name="cube-outline" size={24} color={colors.textMuted} />
         </View>
       )}
@@ -57,6 +57,20 @@ export function ObjetoItem({ objeto, onEdit, onDelete, onPressFoto }: ObjetoItem
           <Text style={[styles.descripcion, { color: colors.textSecondary }]} numberOfLines={2}>
             {objeto.descripcion}
           </Text>
+        ) : null}
+        {objeto.etiquetas && objeto.etiquetas.length > 0 ? (
+          <View style={styles.tagsRow}>
+            {objeto.etiquetas.map((etiqueta) => (
+              <View
+                key={etiqueta.id}
+                style={[styles.tag, { backgroundColor: colors.accentMuted, borderColor: colors.border }]}
+              >
+                <Text style={[styles.tagText, { color: colors.accentDark }]} numberOfLines={1}>
+                  {etiqueta.nombre}
+                </Text>
+              </View>
+            ))}
+          </View>
         ) : null}
       </View>
 
@@ -104,7 +118,7 @@ export function ObjetoItem({ objeto, onEdit, onDelete, onPressFoto }: ObjetoItem
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.lg,
     borderBottomWidth: 1,
@@ -138,22 +152,28 @@ const styles = StyleSheet.create({
   descripcion: {
     fontSize: Typography.sm,
     lineHeight: Typography.sm * Typography.normal,
+    marginBottom: Spacing.xs,
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginTop: Spacing.xs,
+  },
+  tag: {
+    borderRadius: Radii.full,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    marginBottom: Spacing.xs,
+  },
+  tagText: {
+    fontSize: Typography.xs,
   },
   actions: {
     gap: Spacing.xs,
     alignItems: 'flex-end',
-  },
-  editBtn: {
-    padding: Spacing.sm,
-    borderRadius: Radii.sm,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deleteBtn: {
-    padding: Spacing.sm,
-    borderRadius: Radii.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginTop: Spacing.sm,
+
   },
 });
