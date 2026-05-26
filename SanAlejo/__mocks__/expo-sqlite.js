@@ -43,7 +43,17 @@ async function openDatabaseAsync(name) {
   return new MockSQLiteDatabase(db);
 }
 
+// useSQLiteContext mock — returns a minimal in-memory DB for component tests
+// that call useSQLiteContext() (e.g. PanelFiltros).
+const _sharedInMemoryDb = new BetterSQLite(':memory:');
+const _sharedMockDb = new MockSQLiteDatabase(_sharedInMemoryDb);
+
+function useSQLiteContext() {
+  return _sharedMockDb;
+}
+
 module.exports = {
   openDatabaseAsync,
   MockSQLiteDatabase,
+  useSQLiteContext,
 };
