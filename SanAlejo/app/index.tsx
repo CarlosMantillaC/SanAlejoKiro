@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -14,14 +14,16 @@ import { ContenedorItem } from '../src/components/ContenedorItem';
 import { ConfirmDialog } from '../src/components/ConfirmDialog';
 import { FAB } from '../src/components/FAB';
 import { PanelFiltros } from '../src/components/PanelFiltros';
-import { Spacing, Typography, Radii } from '../src/theme';
+import { Radii, Shadows, Spacing, Typography } from '../src/theme';
 import { useTheme } from '../src/context/ThemeContext';
 import { useSortFilter } from '../src/hooks/useSortFilter';
+import { useExportPdf } from '../src/hooks/useExportPdf';
 
 export default function ListaContenedores() {
   const db = useSQLiteContext();
   const { colors } = useTheme();
   const { state, setCriterio, setFiltroUbicacion, setFiltroEtiquetas, reset, isNonDefault } = useSortFilter();
+  const { isExporting, exportError, handleExport, clearError } = useExportPdf(db);
 
   const [contenedores, setContenedores] = useState<Contenedor[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +83,29 @@ export default function ListaContenedores() {
           title: 'San Alejo',
           headerRight: () => (
             <View style={styles.headerButtons}>
+              {/* Export button — Requirements 1.1, 1.2, 1.3 */}
+              <Pressable
+                onPress={handleExport}
+                disabled={contenedores.length === 0 || isExporting}
+                style={[
+                  styles.headerBtn,
+                  (contenedores.length === 0 || isExporting) && styles.headerBtnDisabled,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Exportar inventario como PDF"
+                accessibilityState={{ disabled: contenedores.length === 0 || isExporting }}
+              >
+                <Ionicons
+                  name="share-outline"
+                  size={22}
+                  color={
+                    contenedores.length === 0 || isExporting
+                      ? colors.textMuted
+                      : colors.textPrimary
+                  }
+                />
+              </Pressable>
+
               {/* Filter button with badge when non-default */}
               <Pressable
                 onPress={abrirPanel}
@@ -200,6 +225,81 @@ export default function ListaContenedores() {
         onReset={reset}
         isNonDefault={isNonDefault}
       />
+
+      {/* Progress overlay — Requirements 4.1, 4.2, 4.3 */}
+      <Modal
+        visible={isExporting}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <View style={[styles.progressOverlay, { backgroundColor: colors.overlay }]}>
+          <View style={[styles.progressCard, { backgroundColor: colors.bgElevated, borderColor: colors.borderSubtle }]}>
+            <ActivityIndicator size="large" color={colors.accent} />
+            <Text style={[styles.progressText, { color: colors.textPrimary }]}>
+              Generando PDF…
+            </Text>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Error dialog — Requirement 6.4 */}
+      <Modal
+        visible={exportError !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={clearError}
+        statusBarTranslucent
+      >
+        <Pressable
+          style={[styles.progressOverlay, { backgroundColor: colors.overlay }]}
+          onPress={clearError}
+        >
+          <Pressable
+            style={[styles.errorCard, { backgroundColor: colors.bgElevated, borderColor: colors.borderSubtle }]}
+            onPress={() => {}}
+          >
+            <View style={[styles.errorIconWrap, { backgroundColor: colors.dangerMuted }]}>
+              <Ionicons name="alert-circle-outline" size={28} color={colors.danger} />
+            </View>
+            <Text style={[styles.errorDialogTitle, { color: colors.textPrimary }]}>
+              Error al exportar
+            </Text>
+            <Text style={[styles.errorDialogMessage, { color: colors.textSecondary }]}>
+              {exportError}
+            </Text>
+            <View style={styles.errorButtonRow}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.errorCancelBtn,
+                  { borderColor: colors.bgMuted },
+                  pressed && { backgroundColor: colors.bgMuted },
+                ]}
+                onPress={clearError}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar"
+              >
+                <Text style={[styles.errorCancelText, { color: colors.textSecondary }]}>
+                  Cerrar
+                </Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.errorRetryBtn,
+                  { backgroundColor: pressed ? colors.accentDark : colors.accent },
+                ]}
+                onPress={() => { clearError(); handleExport(); }}
+                accessibilityRole="button"
+                accessibilityLabel="Reintentar exportación"
+              >
+                <Text style={[styles.errorRetryText, { color: colors.textOnAccent }]}>
+                  Reintentar
+                </Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -276,6 +376,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs,
     position: 'relative',
   },
+  headerBtnDisabled: {
+    opacity: 0.4,
+  },
   badge: {
     position: 'absolute',
     top: 4,
@@ -287,5 +390,80 @@ const styles = StyleSheet.create({
   searchBtn: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
+  },
+  // Progress overlay
+  progressOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xxxl,
+  },
+  progressCard: {
+    borderRadius: Radii.xl,
+    padding: Spacing.xxl,
+    alignItems: 'center',
+    gap: Spacing.lg,
+    borderWidth: 1,
+    minWidth: 180,
+    ...Shadows.md,
+  },
+  progressText: {
+    fontSize: Typography.base,
+    fontWeight: Typography.medium,
+  },
+  // Error dialog
+  errorCard: {
+    borderRadius: Radii.xl,
+    padding: Spacing.xxl,
+    width: '100%',
+    alignItems: 'center',
+    borderWidth: 1,
+    ...Shadows.md,
+  },
+  errorIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.lg,
+  },
+  errorDialogTitle: {
+    fontSize: Typography.md,
+    fontWeight: Typography.semibold,
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
+  },
+  errorDialogMessage: {
+    fontSize: Typography.sm,
+    textAlign: 'center',
+    marginBottom: Spacing.xxl,
+    lineHeight: Typography.sm * Typography.relaxed,
+  },
+  errorButtonRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    width: '100%',
+  },
+  errorCancelBtn: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  errorCancelText: {
+    fontSize: Typography.base,
+    fontWeight: Typography.medium,
+  },
+  errorRetryBtn: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: Radii.md,
+    alignItems: 'center',
+  },
+  errorRetryText: {
+    fontSize: Typography.base,
+    fontWeight: Typography.semibold,
   },
 });
