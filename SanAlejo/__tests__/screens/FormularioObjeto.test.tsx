@@ -115,6 +115,23 @@ jest.mock('../../src/components/GaleriaEditor', () => {
   };
 });
 
+// Mock TagPicker to avoid useSQLiteContext dependency in tests
+jest.mock('../../src/components/TagPicker', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return {
+    __esModule: true,
+    default: () => React.createElement(View, { testID: 'mock-tag-picker' }),
+    TagPicker: () => React.createElement(View, { testID: 'mock-tag-picker' }),
+  };
+});
+
+// Mock objetoEtiquetaRepository to avoid DB dependency in EditarObjeto tests
+jest.mock('../../src/db/objetoEtiquetaRepository', () => ({
+  getEtiquetasForObjeto: jest.fn().mockResolvedValue([]),
+  setEtiquetasForObjeto: jest.fn().mockResolvedValue(undefined),
+}));
+
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------

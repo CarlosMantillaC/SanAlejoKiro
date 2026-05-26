@@ -257,6 +257,7 @@ describe('Estado inicial del hook', () => {
       criterioOrden: 'nombre',
       direccionOrden: 'asc',
       filtroUbicacion: null,
+      filtroEtiquetas: [],
     });
   });
 
