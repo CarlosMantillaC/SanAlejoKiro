@@ -300,3 +300,17 @@ Los permisos se solicitan en el momento de uso (no al arrancar la app).
 ## Licencia
 
 Proyecto privado — todos los derechos reservados.
+
+---
+
+## Integrantes
+
+- Carlos José Mantilla Cote
+- David Arturo Aceros Ortiz
+
+## Conclusiones y aprendizajes
+
+- El proyecto demuestra cómo construir una app móvil completa con Expo y React Native para inventario físico, usando SQLite como base de datos local y gestionando fotos, etiquetas y filtros.
+- La separación de responsabilidades entre UI, repositorios de datos y utilidades facilita el mantenimiento y la extensión de la app.
+- El manejo de recursos nativos (imágenes, PDF, permisos) y la persistencia de estado en AsyncStorage son elementos clave para una experiencia de usuario consistente.
+- Aprendimos a aplicar migraciones en SQLite, a integrar servicios de exportación PDF y a diseñar una interfaz con tema claro/oscuro accesible.
