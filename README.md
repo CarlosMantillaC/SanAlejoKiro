@@ -8,19 +8,19 @@ Aplicación móvil para Android e iOS construida con **Expo / React Native** que
 
 | Lista de contenedores | Detalle de contenedor |
 |---|---|
-| ![Lista de contenedores](../Capturas/1000184692.jpg) | ![Detalle de contenedor con objetos](../Capturas/1000184694.jpg) |
+| ![Lista de contenedores](Capturas/1000184692.jpg) | ![Detalle de contenedor con objetos](Capturas/1000184694.jpg) |
 
 | Formulario nuevo contenedor | Formulario nuevo objeto con galería |
 |---|---|
-| ![Formulario de nuevo contenedor](../Capturas/1000184677.jpg) | ![Formulario de nuevo objeto con galería de fotos](../Capturas/1000184693.jpg) |
+| ![Formulario de nuevo contenedor](Capturas/1000184677.jpg) | ![Formulario de nuevo objeto con galería de fotos](Capturas/1000184693.jpg) |
 
 | Búsqueda por nombre y etiquetas | Panel de filtros y ordenamiento |
 |---|---|
-| ![Búsqueda de objetos por nombre y etiquetas](../Capturas/1000184680.jpg) | ![Panel de filtros y criterios de ordenamiento](../Capturas/1000184681.jpg) |
+| ![Búsqueda de objetos por nombre y etiquetas](Capturas/1000184680.jpg) | ![Panel de filtros y criterios de ordenamiento](Capturas/1000184681.jpg) |
 
 | Confirmación de eliminación | Estado vacío |
 |---|---|
-| ![Diálogo de confirmación de eliminación](../Capturas/1000184676.jpg) | ![Estado vacío sin contenedores](../Capturas/1000184678.jpg) |
+| ![Diálogo de confirmación de eliminación](Capturas/1000184676.jpg) | ![Estado vacío sin contenedores](Capturas/1000184678.jpg) |
 
 ---
 
